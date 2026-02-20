@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using ProjetoBlazor.Data;
 using ProjetoBlazor.Models;
 
-namespace ProjetoBlazor.Pages.Operador
+namespace ProjetoBlazor.Pages.OperadorPages
 {
     public class CreateModel : PageModel
     {

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using ProjetoBlazor.Data;
 using ProjetoBlazor.Models;
 
-namespace ProjetoBlazor.Pages.Operador
+namespace ProjetoBlazor.Pages.OperadorPages
 {
     public class DetailsModel : PageModel
     {
