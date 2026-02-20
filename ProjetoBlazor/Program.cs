@@ -4,8 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using ProjetoBlazor.Data;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<DataBaseContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DataBaseContext") ?? throw new InvalidOperationException("Connection string 'DataBaseContext' not found.")));
+
+builder.Services.AddDbContextFactory<DataBaseContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.")));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
