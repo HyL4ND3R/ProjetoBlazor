@@ -1,65 +1,117 @@
 ﻿@page "/Operador/Index"
-@using Microsoft.AspNetCore.Components.Web
-@using ProjetoBlazor.Models
-@using ProjetoBlazor.Data
-@using Microsoft.EntityFrameworkCore
-@inject IDbContextFactory<DataBaseContext> DbFactory
+@rendermode InteractiveServer
 
 <PageTitle>Operadores</PageTitle>
 
-<h3>Lista de Operadores</h3>
+<div class="container-fluid">
+    <h3>Operadores</h3>
 
-@if (operadores == null)
-{
-    <div class="alert alert-info">Carregando dados do banco...</div>
-}
-else if (!operadores.Any())
-{
-    <div class="alert alert-warning">Nenhum operador encontrado no banco PROJETOVB.</div>
-}
-else
-{
-    <table class="table table-striped table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Código</th>
-                <th>Nome</th>
-                <th>Status</th>
-                <th>Perfil</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in operadores)
-            {
-                <tr>
-                    <td>@item.Codigo</td>
-                    <td>@item.Nome</td>
-                    <td>
-                        <span class="badge @(item.Inativo == 1 ? "bg-danger" : "bg-success")">
-                            @(item.Inativo == 1 ? "Inativo" : "Ativo")
-                        </span>
-                    </td>
-                    <td>@(item.Admin == 1 ? "Administrador" : "Operador")</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary">Editar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="input-group">
+                <span class="input-group-text">Filtrar por nome:</span>
+                <input type="text" class="form-control" @bind="filtroNome" @bind:event="oninput" placeholder="Digite para buscar..." />
+                <button class="btn btn-outline-secondary" @onclick="LimparFiltro">Limpar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3 d-flex gap-2">
+        <button class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Novo
+        </button>
+
+        <button class="btn btn-primary" disabled="@(operadorSelecionado == null)" @onclick="EditarSelecionado">
+            <i class="bi bi-pencil"></i> Alterar
+        </button>
+
+        <button class="btn btn-danger" disabled="@(operadorSelecionado == null)" @onclick="ExcluirSelecionado">
+            <i class="bi bi-trash"></i> Excluir
+        </button>
+    </div>
+
+    @if (operadores == null)
+    {
+        <div class="alert alert-info">Carregando dados...</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover border">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Status</th>
+                        <th>Perfil</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in OperadoresFiltrados)
+                    {
+                        <tr @onclick="() => SelecionarLinha(item)" 
+                            style="cursor: pointer;"
+                            class="@(operadorSelecionado?.Codigo == item.Codigo ? "table-primary" : "")">
+                            <td>@item.Codigo</td>
+                            <td>@item.Nome</td>
+                            <td>
+                                <span class="badge @(item.Inativo == 1 ? "bg-danger" : "bg-success")">
+                                    @(item.Inativo == 1 ? "Inativo" : "Ativo")
+                                </span>
+                            </td>
+                            <td>@(item.Admin == 1 ? "Admin" : "Operador")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
 
 @code {
     private List<Operador>? operadores;
+    private Operador? operadorSelecionado;
+    private string filtroNome = "";
 
-    // Este método roda assim que o componente é carregado
+    // Lógica do Filtro: sempre que o filtro muda, a lista filtrada se ajusta
+    private IEnumerable<Operador> OperadoresFiltrados => 
+        operadores?.Where(x => string.IsNullOrWhiteSpace(filtroNome) || 
+                          x.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase)) 
+        ?? Enumerable.Empty<Operador>();
+
     protected override async Task OnInitializedAsync()
     {
-        // Criamos uma instância temporária do contexto para esta consulta
         using var context = DbFactory.CreateDbContext();
-
-        // Buscamos a lista de operadores de forma assíncrona
         operadores = await context.Operador.ToListAsync();
+    }
+
+    private void SelecionarLinha(Operador op)
+    {
+        Console.WriteLine("ENTROU AQUI");
+        // Se clicar no que já está selecionado, desmarca
+        if (operadorSelecionado?.Codigo == op.Codigo)
+            operadorSelecionado = null;
+        else
+            operadorSelecionado = op;
+    }
+
+    private void LimparFiltro() => filtroNome = "";
+
+    private void EditarSelecionado()
+    {
+        if (operadorSelecionado != null)
+        {
+            // Lógica para abrir tela de edição
+            Console.WriteLine($"Editando: {operadorSelecionado.Nome}");
+        }
+    }
+
+    private void ExcluirSelecionado()
+    {
+        if (operadorSelecionado != null)
+        {
+            // Lógica para excluir
+            Console.WriteLine($"Excluindo: {operadorSelecionado.Nome}");
+        }
     }
 }
