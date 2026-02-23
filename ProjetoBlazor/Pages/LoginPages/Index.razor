@@ -1,0 +1,103 @@
+﻿@page "/Login"
+
+<PageTitle>Login</PageTitle>
+
+<h3>Login</h3>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="header-content">
+                <img src="logo-compumate.png" alt="Logo" class="logo-img" />
+                <h1>ERP</h1>
+            </div>
+        </div>
+
+        <div class="login-body">
+            <h3>Login</h3>
+
+            <div class="form-group mb-3">
+                <label>Usuário</label>
+                <input type="text" class="form-control" @bind="usuarioInput" />
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Senha</label>
+                <input type="password" class="form-control" @bind="senhaInput" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(mensagemErro))
+            {
+                <div class="alert alert-danger p-2">@mensagemErro</div>
+            }
+
+            <button class="btn btn-primary w-100 mt-2" @onclick="ValidarLogin">Acessar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-container {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f0f2f5;
+    }
+
+    .login-card {
+        width: 400px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .login-header {
+        background: linear-gradient(135deg, #003366 0%, #004080 100%);
+        padding: 40px 20px;
+        color: white;
+        text-align: center;
+    }
+
+    .login-body {
+        padding: 30px;
+    }
+
+    .btn-primary {
+        background-color: #1a5a8a;
+        border: none;
+    }
+
+        .btn-primary:hover {
+            background-color: #14466b;
+        }
+</style>
+
+@code {
+    private string usuarioInput = "";
+    private string senhaInput = "";
+    private string mensagemErro = "";
+
+    private async Task ValidarLogin()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        // Busca o operador no banco
+        var operador = await context.Operador
+            .FirstOrDefaultAsync(x => x.Nome == usuarioInput && x.Senha == senhaInput && x.Inativo == 0);
+
+        if (operador != null)
+        {
+            // ARMAZENAR NA SESSÃO
+            await SessionStorage.SetAsync("OperadorLogado", operador.Nome);
+            await SessionStorage.SetAsync("IsAdmin", operador.Admin == 1);
+
+            Nav.NavigateTo("/Operador/Index");
+        }
+        else
+        {
+            mensagemErro = "Usuário ou senha inválidos.";
+        }
+    }
+}

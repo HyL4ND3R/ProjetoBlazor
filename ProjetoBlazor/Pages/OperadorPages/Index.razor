@@ -49,7 +49,7 @@
                 <tbody>
                     @foreach (var item in OperadoresFiltrados)
                     {
-                        <tr @onclick="() => SelecionarLinha(item)" 
+                        <tr @onclick="() => SelecionarLinha(item)"
                             style="cursor: pointer;"
                             class="@(operadorSelecionado?.Codigo == item.Codigo ? "table-primary" : "")">
                             <td>@item.Codigo</td>
@@ -73,10 +73,24 @@
     private Operador? operadorSelecionado;
     private string filtroNome = "";
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var result = await SessionStorage.GetAsync<string>("OperadorLogado");
+            if (!result.Success || string.IsNullOrEmpty(result.Value))
+            {
+                Nav.NavigateTo("/Login");
+            }
+        }
+    }
+
     // Lógica do Filtro: sempre que o filtro muda, a lista filtrada se ajusta
-    private IEnumerable<Operador> OperadoresFiltrados => 
-        operadores?.Where(x => string.IsNullOrWhiteSpace(filtroNome) || 
-                          x.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase)) 
+    private IEnumerable<Operador> OperadoresFiltrados =>
+        operadores?.Where(x => string.IsNullOrWhiteSpace(filtroNome) ||
+        x.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase) ||
+        x.Codigo.ToString().Contains(filtroNome, StringComparison.OrdinalIgnoreCase))
+
         ?? Enumerable.Empty<Operador>();
 
     protected override async Task OnInitializedAsync()
@@ -87,7 +101,6 @@
 
     private void SelecionarLinha(Operador op)
     {
-        Console.WriteLine("ENTROU AQUI");
         // Se clicar no que já está selecionado, desmarca
         if (operadorSelecionado?.Codigo == op.Codigo)
             operadorSelecionado = null;
@@ -102,16 +115,41 @@
         if (operadorSelecionado != null)
         {
             // Lógica para abrir tela de edição
-            Console.WriteLine($"Editando: {operadorSelecionado.Nome}");
+
         }
     }
 
-    private void ExcluirSelecionado()
+    private async void ExcluirSelecionado()
     {
         if (operadorSelecionado != null)
         {
-            // Lógica para excluir
-            Console.WriteLine($"Excluindo: {operadorSelecionado.Nome}");
+            // 1. Pergunta ao usuário usando o confirm do navegador
+            bool confirmado = await JS.InvokeAsync<bool>("confirm", "Confirma Exclusão ?");
+
+            if (confirmado)
+            {
+                try
+                {
+                    using var context = DbFactory.CreateDbContext();
+
+                    // 2. Remove do banco de dados
+                    context.Operador.Remove(operadorSelecionado);
+                    await context.SaveChangesAsync();
+
+                    // 3. Atualiza a lista na tela para refletir a exclusão
+                    operadores?.Remove(operadorSelecionado);
+                    operadorSelecionado = null; // Limpa a seleção
+
+                    // Opcional: Feedback visual
+                    await JS.InvokeVoidAsync("alert", "Operador excluído com sucesso!");
+
+                    StateHasChanged();
+                }
+                catch (Exception ex)
+                {
+                    await JS.InvokeVoidAsync("alert", "Erro ao excluir: " + ex.Message);
+                }
+            }
         }
     }
 }
