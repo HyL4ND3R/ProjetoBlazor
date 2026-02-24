@@ -73,18 +73,6 @@
     private Operador? operadorSelecionado;
     private string filtroNome = "";
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            var result = await SessionStorage.GetAsync<string>("OperadorLogado");
-            if (!result.Success || string.IsNullOrEmpty(result.Value))
-            {
-                Nav.NavigateTo("/Login");
-            }
-        }
-    }
-
     // Lógica do Filtro: sempre que o filtro muda, a lista filtrada se ajusta
     private IEnumerable<Operador> OperadoresFiltrados =>
         operadores?.Where(x => string.IsNullOrWhiteSpace(filtroNome) ||
