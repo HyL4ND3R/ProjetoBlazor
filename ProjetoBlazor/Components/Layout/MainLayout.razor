@@ -1,23 +1,76 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage SessionStorage
+@inject NavigationManager Nav
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+    @if (carregando)
+    {
+        <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: #f8f9fa; z-index: 9999;">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    }
+    else if (estaLogado)
+    {
+        <div class="sidebar">
+            <NavMenu />
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+        <main>
+            <div class="top-row px-4">
+                <span>Bem-vindo!</span>
+                <button class="btn btn-link text-danger ms-3" @onclick="Sair">Sair</button>
+            </div>
+
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    }
 </div>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+@code {
+    private bool carregando = true;
+    private bool estaLogado = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var result = await SessionStorage.GetAsync<string>("OperadorLogado");
+
+                if (result.Success && !string.IsNullOrEmpty(result.Value))
+                {
+                    estaLogado = true;
+                }
+                else
+                {
+                    // Se não estiver logado e não for a tela de login, chuta pra fora
+                    if (Nav.ToBaseRelativePath(Nav.Uri) != "")
+                    {
+                        Nav.NavigateTo("/");
+                    }
+                }
+            }
+            catch
+            {
+                Nav.NavigateTo("/");
+            }
+            finally
+            {
+                carregando = false;
+                StateHasChanged(); // Força a tela a sair do "carregando" e mostrar o sistema ou redirecionar
+            }
+        }
+    }
+
+    private async Task Sair()
+    {
+        await SessionStorage.DeleteAsync("OperadorLogado");
+        Nav.NavigateTo("/", true);
+    }
+}
