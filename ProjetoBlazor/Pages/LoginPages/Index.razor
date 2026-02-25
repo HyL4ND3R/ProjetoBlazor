@@ -1,4 +1,4 @@
-﻿@page "/Login"
+﻿@page "/"
 @layout LayoutDeslogado
 @rendermode InteractiveServer
 
@@ -13,8 +13,8 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="mb-3">
-                        <label class="form-label">Usuário</label>
-                        <input type="text" class="form-control" @bind="usuarioInput" placeholder="Nome do operador" />
+                        <label class="form-label">Código:</label>
+                        <input type="number" class="form-control" @bind="codigoInput"/>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Senha</label>
@@ -36,7 +36,7 @@
 </div>
 
 @code {
-    private string usuarioInput = "";
+    private int codigoInput = 0;
     private string senhaInput = "";
     private string mensagemErro = "";
 
@@ -50,7 +50,7 @@
         using var context = DbFactory.CreateDbContext();
 
         var operador = await context.Operador
-            .FirstOrDefaultAsync(x => x.Nome == usuarioInput && x.Senha == senhaInput && x.Inativo == 0);
+            .FirstOrDefaultAsync(x => x.Codigo == codigoInput && x.Senha == senhaInput && x.Inativo == 0);
 
         if (operador != null)
         {
