@@ -9,3 +9,11 @@
 @using ProjetoBlazor
 @using ProjetoBlazor.Components
 @using ProjetoBlazor.Components.Layout
+@using ProjetoBlazor.Models
+@using ProjetoBlazor.Data
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage SessionStorage
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject IDbContextFactory<DataBaseContext> DbFactory

@@ -1,0 +1,93 @@
+﻿@page "/Operador/Novo"
+@using ProjetoBlazor.Models
+@using ProjetoBlazor.Data
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<DataBaseContext> DbFactory
+@inject NavigationManager Nav
+
+<PageTitle>Novo Operador</PageTitle>
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastro de Operador</h5>
+                </div>
+
+                <div class="card-body">
+                    <EditForm Model="novoOperador" OnValidSubmit="SalvarOperador">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Operador <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="novoOperador.Nome" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Senha <span class="text-danger">*</span></label>
+                            <InputText type="password" class="form-control" @bind-Value="novoOperador.Senha" required />
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="checkAdmin" @bind="isAdmin">
+                                    <label class="form-check-label" for="checkAdmin">
+                                        Perfil Administrador
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="checkInativo" @bind="isInativo">
+                                    <label class="form-check-label text-danger" for="checkInativo">
+                                        Usuário Inativo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg"></i> Salvar
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Voltar">
+                                Cancelar
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Instância vazia que será preenchida pelo formulário
+    private Operador novoOperador = new Operador();
+
+    // Variáveis auxiliares para os checkboxes na tela
+    private bool isAdmin = false;
+    private bool isInativo = false;
+
+    private async Task SalvarOperador()
+    {
+        // 1. Converte os booleanos da tela para os bytes do banco (1 ou 0)
+        novoOperador.Admin = isAdmin ? (byte)1 : (byte)0;
+        novoOperador.Inativo = isInativo ? (byte)1 : (byte)0;
+
+        // 2. Cria o contexto, adiciona o objeto e salva no banco
+        using var context = DbFactory.CreateDbContext();
+        context.Operador.Add(novoOperador);
+        await context.SaveChangesAsync();
+
+        // 3. Volta para a lista de operadores após salvar
+        Nav.NavigateTo("/Operador");
+    }
+
+    private void Voltar()
+    {
+        Nav.NavigateTo("/Operador");
+    }
+}

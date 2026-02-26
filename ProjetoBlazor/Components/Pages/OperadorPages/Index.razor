@@ -1,4 +1,4 @@
-﻿@page "/Operador/Index"
+﻿@page "/Operador"
 @rendermode InteractiveServer
 
 <PageTitle>Operadores</PageTitle>
@@ -17,9 +17,9 @@
     </div>
 
     <div class="mb-3 d-flex gap-2">
-        <button class="btn btn-success">
+        <a href="/Operador/Novo" class="btn btn-success">
             <i class="bi bi-plus-circle"></i> Novo
-        </button>
+        </a>
 
         <button class="btn btn-primary" disabled="@(operadorSelecionado == null)" @onclick="EditarSelecionado">
             <i class="bi bi-pencil"></i> Alterar
