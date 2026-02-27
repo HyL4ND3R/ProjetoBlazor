@@ -1,6 +1,6 @@
-﻿@page "/Operador/Novo"
+﻿@page "/Operador/Alterar"
 
-<PageTitle>Novo Operador</PageTitle>
+<PageTitle>Alterar Operador</PageTitle>
 
 <div class="container-fluid mt-3">
     <div class="row">
@@ -11,17 +11,22 @@
                 </div>
 
                 <div class="card-body">
-                    <EditForm Model="novoOperador" OnValidSubmit="SalvarOperador">
+                    <EditForm Model="alterarOperador" OnValidSubmit="SalvarOperador">
                         <DataAnnotationsValidator />
 
                         <div class="mb-3">
-                            <label class="form-label">Nome do Operador <span class="text-danger">*</span></label>
-                            <InputText class="form-control" @bind-Value="novoOperador.Nome" required />
+                            <label class="form-label">Código<span class="text-danger">*</span></label>
+                            <InputNumber class="form-control" @bind-Value="alterarOperador.Codigo" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome<span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="alterarOperador.Nome" required />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Senha <span class="text-danger">*</span></label>
-                            <InputText type="password" class="form-control" @bind-Value="novoOperador.Senha" required />
+                            <InputText type="password" class="form-control" @bind-Value="alterarOperador.Senha" required />
                         </div>
 
                         <div class="row mb-4">
@@ -59,22 +64,22 @@
 </div>
 
 @code {
-    // Instância vazia que será preenchida pelo formulário
-    private Operador novoOperador = new Operador();
+    
+    private Operador alterarOperador = new Operador();
 
-    // Variáveis auxiliares para os checkboxes na tela
+    // Variáveis auxiliares para os checkbox na tela
     private bool isAdmin = false;
     private bool isInativo = false;
 
     private async Task SalvarOperador()
     {
         // 1. Converte os booleanos da tela para os bytes do banco (1 ou 0)
-        novoOperador.Admin = isAdmin ? (byte)1 : (byte)0;
-        novoOperador.Inativo = isInativo ? (byte)1 : (byte)0;
+        alterarOperador.Admin = isAdmin ? (byte)1 : (byte)0;
+        alterarOperador.Inativo = isInativo ? (byte)1 : (byte)0;
 
         // 2. Cria o contexto, adiciona o objeto e salva no banco
         using var context = DbFactory.CreateDbContext();
-        context.Operador.Add(novoOperador);
+        context.Operador.Update(alterarOperador);
         await context.SaveChangesAsync();
 
         // 3. Volta para a lista de operadores após salvar

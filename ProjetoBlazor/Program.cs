@@ -21,6 +21,9 @@ builder.Services.AddRazorComponents()
 // Add serviço de Storage de sessão
 builder.Services.AddScoped<ProtectedSessionStorage>();
 
+// Add serviço de Sessão personalizado para pegar o operador logado
+builder.Services.AddScoped<ProjetoBlazor.Services.SessaoService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
