@@ -40,6 +40,15 @@
     private string senhaInput = "";
     private string mensagemErro = "";
 
+    protected override async Task OnInitializedAsync()
+    {
+        Operador? operadorLogado = await SessaoService.GetOperadorLogadoAsync();
+        if (operadorLogado != null)
+        {
+            Nav.NavigateTo("/Home", forceLoad: true);
+        }
+    }
+
     private async Task VerificarTecla(KeyboardEventArgs e)
     {
         if (e.Key == "Enter") await ValidarLogin();

@@ -1,27 +1,43 @@
-﻿@page "/Operador/Novo"
+﻿@page "/Operador/Form/{id:int}"
 
-<PageTitle>Novo Operador</PageTitle>
+<PageTitle>Operador</PageTitle>
 
 <div class="container-fluid mt-3">
     <div class="row">
         <div class="col-md-6">
             <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastro de Operador</h5>
-                </div>
-
+                @if (operador.Codigo > 0)
+                {
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Operador</h5>
+                    </div>
+                }
+                else
+                {
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastro de Operador</h5>
+                    </div>
+                }
                 <div class="card-body">
-                    <EditForm Model="novoOperador" OnValidSubmit="SalvarOperador">
+                    <EditForm Model="operador" OnValidSubmit="SalvarOperador">
                         <DataAnnotationsValidator />
+
+                        @if (operador.Codigo > 0)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Código<span class="text-danger">*</span></label>
+                                <InputNumber class="form-control" @bind-Value="operador.Codigo" required disabled />
+                            </div>
+                        }
 
                         <div class="mb-3">
                             <label class="form-label">Nome do Operador <span class="text-danger">*</span></label>
-                            <InputText class="form-control" @bind-Value="novoOperador.Nome" required />
+                            <InputText class="form-control" @bind-Value="operador.Nome" required />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Senha <span class="text-danger">*</span></label>
-                            <InputText type="password" class="form-control" @bind-Value="novoOperador.Senha" required />
+                            <InputText type="password" class="form-control" @bind-Value="operador.Senha" required />
                         </div>
 
                         <div class="row mb-4">
@@ -59,22 +75,28 @@
 </div>
 
 @code {
-    // Instância vazia que será preenchida pelo formulário
-    private Operador novoOperador = new Operador();
-
+    [Parameter] public int? id { get; set; }
+    private Operador operador = new Operador();
     // Variáveis auxiliares para os checkboxes na tela
     private bool isAdmin = false;
     private bool isInativo = false;
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (id == null || id == 0){
+            operador = DbFactory.CreateDbContext().Operador.FirstOrDefault(o => o.Codigo == id) ?? new Operador();
+        }
+    }
+
     private async Task SalvarOperador()
     {
         // 1. Converte os booleanos da tela para os bytes do banco (1 ou 0)
-        novoOperador.Admin = isAdmin ? (byte)1 : (byte)0;
-        novoOperador.Inativo = isInativo ? (byte)1 : (byte)0;
+        operador.Admin = isAdmin ? (byte)1 : (byte)0;
+        operador.Inativo = isInativo ? (byte)1 : (byte)0;
 
         // 2. Cria o contexto, adiciona o objeto e salva no banco
         using var context = DbFactory.CreateDbContext();
-        context.Operador.Add(novoOperador);
+        context.Operador.Add(operador);
         await context.SaveChangesAsync();
 
         // 3. Volta para a lista de operadores após salvar
