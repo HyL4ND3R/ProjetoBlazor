@@ -4,48 +4,70 @@
 
 <PageTitle>Login</PageTitle>
 
-<div class="container">
-    <div class="row justify-content-center vh-100 align-items-center">
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white text-center py-3">
-                    <h4 class="mb-0">LOGIN</h4>
-                </div>
-                <div class="card-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label">Código:</label>
-                        <input type="number" class="form-control" @bind="codigoInput"/>
+@if (!verificando)
+{
+    <div class="container">
+        <div class="row justify-content-center vh-100 align-items-center">
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white text-center py-3">
+                        <h4 class="mb-0">LOGIN</h4>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Senha</label>
-                        <input type="password" class="form-control" @bind="senhaInput" @onkeyup="VerificarTecla" />
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label">Código:</label>
+                            <input type="number" class="form-control" @bind="codigoInput" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Senha</label>
+                            <input type="password" class="form-control" @bind="senhaInput" @onkeyup="VerificarTecla" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(mensagemErro))
+                        {
+                            <div class="alert alert-danger py-2">@mensagemErro</div>
+                        }
+
+                        <button class="btn btn-primary w-100" @onclick="ValidarLogin">
+                            <i class="bi bi-box-arrow-in-right"></i> Acessar
+                        </button>
                     </div>
-
-                    @if (!string.IsNullOrEmpty(mensagemErro))
-                    {
-                        <div class="alert alert-danger py-2">@mensagemErro</div>
-                    }
-
-                    <button class="btn btn-primary w-100" @onclick="ValidarLogin">
-                        <i class="bi bi-box-arrow-in-right"></i> Acessar
-                    </button>
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
+else
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: #f8f9fa; z-index: 9999;">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+    </div>
+}
 
 @code {
-    private int codigoInput = 0;
+    private bool verificando = true;
+    private int? codigoInput;
     private string senhaInput = "";
     private string mensagemErro = "";
 
     protected override async Task OnInitializedAsync()
     {
         Operador? operadorLogado = await SessaoService.GetOperadorLogadoAsync();
+
         if (operadorLogado != null)
         {
+            // Se tem alguém logado, vai pra Home
             Nav.NavigateTo("/Home", forceLoad: true);
+        }
+        else
+        {
+            // Se NÃO tem ninguém logado, libera a tela de login para ser exibida
+            verificando = false;
+
+            // Como OnInitializedAsync terminou, o Blazor vai re-renderizar a tela
+            // automaticamente, caindo no 'else' do HTML lá em cima.
         }
     }
 

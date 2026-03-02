@@ -17,9 +17,13 @@
     </div>
 
     <div class="mb-3 d-flex gap-2">
-        <a href="/Operador/Form{id:0}" class="btn btn-success">
+        @*<a href="/Operador/Form?id=0" class="btn btn-success">
             <i class="bi bi-plus-circle"></i> Novo
-        </a>
+        </a>*@
+
+        <button class="btn btn-primary" @onclick="NovoRegistro">
+            <i class="bi bi-plus-circle"></i> Novo
+        </button>
 
         <button class="btn btn-primary" disabled="@(operadorSelecionado == null)" @onclick="EditarSelecionado">
             <i class="bi bi-pencil"></i> Alterar
@@ -97,6 +101,11 @@
     }
 
     private void LimparFiltro() => filtroNome = "";
+
+    private void NovoRegistro()
+    {
+        Nav.NavigateTo("/Operador/Form?id=0");
+    }
 
     private void EditarSelecionado()
     {
