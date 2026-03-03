@@ -104,15 +104,14 @@
 
     private void NovoRegistro()
     {
-        Nav.NavigateTo("/Operador/Form?id=0");
+        Nav.NavigateTo("/Operador/Form");
     }
 
     private void EditarSelecionado()
     {
         if (operadorSelecionado != null)
         {
-            // Lógica para abrir tela de edição
-
+            Nav.NavigateTo("/Operador/Form/"+operadorSelecionado.Codigo);
         }
     }
 
