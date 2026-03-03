@@ -7,6 +7,20 @@
     <div class="row">
         <div class="col-md-6">
             <div class="card shadow-sm">
+                @if (!string.IsNullOrEmpty(mensagemSucesso))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @mensagemSucesso
+                        <button type="button" class="btn-close" @onclick="() => mensagemSucesso = null"></button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(mensagemErro))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @mensagemErro
+                    </div>
+                }
                 @if (operador.Codigo > 0)
                 {
                     <div class="card-header bg-warning text-dark">
@@ -16,7 +30,7 @@
                 else
                 {
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastro de Operador</h5>
+                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastrar Operador</h5>
                     </div>
                 }
                 <div class="card-body">
@@ -81,27 +95,59 @@
     // Variáveis auxiliares para os checkboxes na tela
     private bool isAdmin = false;
     private bool isInativo = false;
+    private string? mensagemSucesso;
+    private string? mensagemErro;
 
     protected override async Task OnInitializedAsync()
     {
-        if (id > 0){
+        if (id > 0)
+        {
             operador = DbFactory.CreateDbContext().Operador.FirstOrDefault(o => o.Codigo == id) ?? new Operador();
         }
     }
 
     private async Task SalvarOperador()
     {
-        // 1. Converte os booleanos da tela para os bytes do banco (1 ou 0)
-        operador.Admin = isAdmin ? (byte)1 : (byte)0;
-        operador.Inativo = isInativo ? (byte)1 : (byte)0;
+        try
+        {
+            // Converte os booleanos da tela para os bytes do banco (1 ou 0)
+            operador.Admin = isAdmin ? (byte)1 : (byte)0;
+            operador.Inativo = isInativo ? (byte)1 : (byte)0;
+            var context = DbFactory.CreateDbContext();
 
-        // 2. Cria o contexto, adiciona o objeto e salva no banco
-        using var context = DbFactory.CreateDbContext();
-        context.Operador.Add(operador);
-        await context.SaveChangesAsync();
+            if (operador.Codigo > 0)
+            {
+                // Se o código for maior que 0, é uma edição, então atualiza o objeto no banco
+                context.Operador.Update(operador);
+                await context.SaveChangesAsync();
+            }
+            else
+            {
+                // Se não é uma inclusão, então adiciona o novo operador ao banco
+                context.Operador.Add(operador);
+                await context.SaveChangesAsync();
+            }
+            mensagemSucesso = "Operador salvo com sucesso!";
 
-        // 3. Volta para a lista de operadores após salvar
-        Nav.NavigateTo("/Operador");
+            // Se era inclusão, o EF preencheu o 'operador.Codigo' automaticamente.
+            // Agora "avisamos" o Blazor que a URL mudou para modo de edição, sem recarregar a página.
+            Nav.NavigateTo($"/Operador/Form/{operador.Codigo}", replace: true);
+
+            _ = Task.Delay(5000).ContinueWith(_ =>
+{
+    mensagemSucesso = null;
+    InvokeAsync(StateHasChanged);
+});
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro ao salvar o operador: {ex.Message}";
+            _ = Task.Delay(5000).ContinueWith(_ =>
+{
+    mensagemErro = null;
+    InvokeAsync(StateHasChanged);
+});
+        }
     }
 
     private void Voltar()
