@@ -84,7 +84,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (id == null || id == 0){
+        if (id > 0){
             operador = DbFactory.CreateDbContext().Operador.FirstOrDefault(o => o.Codigo == id) ?? new Operador();
         }
     }
