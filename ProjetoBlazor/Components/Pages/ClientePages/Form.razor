@@ -1,0 +1,186 @@
+﻿@page "/Cliente/Form"
+@page "/Cliente/Form/{id:int}"
+
+<PageTitle>Cliente</PageTitle>
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                @if (!string.IsNullOrEmpty(mensagemSucesso))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @mensagemSucesso
+                        <button type="button" class="btn-close" @onclick="() => mensagemSucesso = null"></button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(mensagemErro))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @mensagemErro
+                    </div>
+                }
+                @if (cliente.Codigo > 0)
+                {
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Cliente</h5>
+                    </div>
+                }
+                else
+                {
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastrar Cliente</h5>
+                    </div>
+                }
+                <div class="card-body">
+                    <EditForm Model="cliente" OnValidSubmit="SalvarCliente">
+                        <DataAnnotationsValidator />
+
+                        @if (cliente.Codigo > 0)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Código<span class="text-danger">*</span></label>
+                                <InputNumber class="form-control" @bind-Value="cliente.Codigo" required disabled />
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome<span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="cliente.Nome" required />
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Tipo de Documento</label>
+                                <InputSelect @bind-Value="cliente.TipoDocumento" class="form-select">
+                                    @foreach (var tipo in Enum.GetValues<TipoDocumento>())
+                                    {
+                                        <option value="@tipo">@tipo</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Documento</label>
+                                <InputText @bind-Value="cliente.Documento"
+                                           class="form-control"
+                                           placeholder="@ObterPlaceholder()"
+                                           maxlength="@ObterMaximoCaracteres()" />
+
+                                <small class="text-muted">Formato esperado: @ObterPlaceholder()</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome<span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="cliente.Telefone" required maxlenght="15" />
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="checkInativo" @bind="isInativo">
+                                    <label class="form-check-label text-danger" for="checkInativo">
+                                        Usuário Inativo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg"></i> Salvar
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Voltar">
+                                Cancelar
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? id { get; set; }
+    private Cliente cliente = new Cliente();
+    // Variávei auxiliar para o checkbox na tela
+    private bool isInativo = false;
+    private string? mensagemSucesso;
+    private string? mensagemErro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (id > 0)
+        {
+            cliente = DbFactory.CreateDbContext().Cliente.FirstOrDefault(o => o.Codigo == id) ?? new Cliente();
+        }
+    }
+
+    private async Task SalvarCliente()
+    {
+        try
+        {
+            // Converte os booleanos da tela para os bytes do banco (1 ou 0)
+            cliente.Inativo = isInativo ? (byte)1 : (byte)0;
+            var context = DbFactory.CreateDbContext();
+
+            if (cliente.Codigo > 0)
+            {
+                // Se o código for maior que 0, é uma edição, então atualiza o objeto no banco
+                context.Cliente.Update(cliente);
+                await context.SaveChangesAsync();
+            }
+            else
+            {
+                // Se não é uma inclusão, então adiciona o novo operador ao banco
+                context.Cliente.Add(cliente);
+                await context.SaveChangesAsync();
+            }
+            mensagemSucesso = "Cliente salvo com sucesso!";
+
+            // Se era inclusão, o EF preencheu o 'operador.Codigo' automaticamente.
+            // Agora "avisamos" o Blazor que a URL mudou para modo de edição, sem recarregar a página.
+            Nav.NavigateTo($"/Cliente/Form/{cliente.Codigo}", replace: true);
+
+            _ = Task.Delay(5000).ContinueWith(_ =>
+{
+    mensagemSucesso = null;
+    InvokeAsync(StateHasChanged);
+});
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro ao salvar o Cliente: {ex.Message}";
+            _ = Task.Delay(5000).ContinueWith(_ =>
+{
+    mensagemErro = null;
+    InvokeAsync(StateHasChanged);
+});
+        }
+    }
+
+    // Lógica para mudar o Placeholder dinamicamente
+    private string ObterPlaceholder() => cliente.TipoDocumento switch
+    {
+        TipoDocumento.CPF => "000.000.000-00",
+        TipoDocumento.CNPJ => "00.000.000/0000-00",
+        TipoDocumento.Outros => "",
+        _ => "Digite o documento"
+    };
+
+    // Lógica para limitar o tamanho conforme o tipo
+    private int ObterMaximoCaracteres() => cliente.TipoDocumento switch
+    {
+        TipoDocumento.CPF => 14,
+        TipoDocumento.CNPJ => 18,
+        TipoDocumento.Outros => 99,
+        _ => 20
+    };
+
+    private void Voltar()
+    {
+        Nav.NavigateTo("/Cliente");
+    }
+}
