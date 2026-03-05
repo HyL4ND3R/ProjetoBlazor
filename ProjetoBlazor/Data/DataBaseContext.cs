@@ -16,5 +16,6 @@ namespace ProjetoBlazor.Data
 
         public DbSet<Operador> Operador { get; set; } = default!;
         public DbSet<Cliente> Cliente { get; set; } = default!;
+        public DbSet<Produto> Produto { get; set; } = default!;
     }
 }

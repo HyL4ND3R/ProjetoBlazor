@@ -1,0 +1,147 @@
+﻿@page "/Produto"
+@rendermode InteractiveServer
+
+<PageTitle>Produtoes</PageTitle>
+
+<div class="container-fluid">
+    <h3>Produtoes</h3>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="input-group">
+                <span class="input-group-text">Filtrar por nome:</span>
+                <input type="text" class="form-control" @bind="filtroNome" @bind:event="oninput" placeholder="Digite para buscar..." />
+                <button class="btn btn-outline-secondary" @onclick="LimparFiltro">Limpar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3 d-flex gap-2">
+        <button class="btn btn-success" @onclick="NovoRegistro">
+            <i class="bi bi-plus-circle"></i> Novo
+        </button>
+
+        <button class="btn btn-primary" disabled="@(ProdutoSelecionado == null)" @onclick="EditarSelecionado">
+            <i class="bi bi-pencil"></i> Alterar
+        </button>
+
+        <button class="btn btn-danger" disabled="@(ProdutoSelecionado == null)" @onclick="ExcluirSelecionado">
+            <i class="bi bi-trash"></i> Excluir
+        </button>
+    </div>
+
+    @if (Produtos == null)
+    {
+        <div class="alert alert-info">Carregando dados...</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover border">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in ProdutoesFiltrados)
+                    {
+                        <tr @onclick="() => SelecionarLinha(item)"
+                            style="cursor: pointer;"
+                            class="@(ProdutoSelecionado?.Codigo == item.Codigo ? "table-primary" : "")">
+                            <td>@item.Codigo</td>
+                            <td>@item.Nome</td>
+                            <td>@item.Valor</td>
+                            <td>
+                                <span class="badge @(item.Inativo == 1 ? "bg-danger" : "bg-success")">
+                                    @(item.Inativo == 1 ? "Inativo" : "Ativo")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Produto>? Produtos;
+    private Produto? ProdutoSelecionado;
+    private string filtroNome = "";
+
+    // Lógica do Filtro: sempre que o filtro muda, a lista filtrada se ajusta
+    private IEnumerable<Produto> ProdutoesFiltrados =>
+        Produtos?.Where(x => string.IsNullOrWhiteSpace(filtroNome) ||
+        x.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase) ||
+        x.Codigo.ToString().Contains(filtroNome, StringComparison.OrdinalIgnoreCase))
+
+        ?? Enumerable.Empty<Produto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Produtos = await context.Produto.ToListAsync();
+    }
+
+    private void SelecionarLinha(Produto op)
+    {
+        // Se clicar no que já está selecionado, desmarca
+        if (ProdutoSelecionado?.Codigo == op.Codigo)
+            ProdutoSelecionado = null;
+        else
+            ProdutoSelecionado = op;
+    }
+
+    private void LimparFiltro() => filtroNome = "";
+
+    private void NovoRegistro()
+    {
+        Nav.NavigateTo("/Produto/Form");
+    }
+
+    private void EditarSelecionado()
+    {
+        if (ProdutoSelecionado != null)
+        {
+            Nav.NavigateTo("/Produto/Form/"+ProdutoSelecionado.Codigo);
+        }
+    }
+
+    private async void ExcluirSelecionado()
+    {
+        if (ProdutoSelecionado != null)
+        {
+            // 1. Pergunta ao usuário usando o confirm do navegador
+            bool confirmado = await JS.InvokeAsync<bool>("confirm", "Confirma Exclusão ?");
+
+            if (confirmado)
+            {
+                try
+                {
+                    using var context = DbFactory.CreateDbContext();
+
+                    // 2. Remove do banco de dados
+                    context.Produto.Remove(ProdutoSelecionado);
+                    await context.SaveChangesAsync();
+
+                    // 3. Atualiza a lista na tela para refletir a exclusão
+                    Produtos?.Remove(ProdutoSelecionado);
+                    ProdutoSelecionado = null; // Limpa a seleção
+
+                    // Opcional: Feedback visual
+                    await JS.InvokeVoidAsync("alert", "Produto excluído com sucesso!");
+
+                    StateHasChanged();
+                }
+                catch (Exception ex)
+                {
+                    await JS.InvokeVoidAsync("alert", "Erro ao excluir: " + ex.Message);
+                }
+            }
+        }
+    }
+}
