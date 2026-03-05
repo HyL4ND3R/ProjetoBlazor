@@ -6,6 +6,11 @@
 <div class="container-fluid mt-3">
     <div class="row">
         <div class="col-md-6">
+
+            @*<button class="btn btn-success" @onclick="Teste">
+                <i class="bi bi-plus-circle"></i> Teste
+            </button>*@
+
             <div class="card shadow-sm">
                 @if (!string.IsNullOrEmpty(mensagemSucesso))
                 {
@@ -49,11 +54,11 @@
                             <label class="form-label">Nome<span class="text-danger">*</span></label>
                             <InputText class="form-control" @bind-Value="cliente.Nome" required />
                         </div>
-                        
+
                         <div class="row mb-4">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Tipo de Documento</label>
-                                <InputSelect @bind-Value="cliente.TipoDocumento" class="form-select">
+                                <InputSelect @bind-Value="TipoSelecionado" class="form-select">
                                     @foreach (var tipo in Enum.GetValues<TipoDocumento>())
                                     {
                                         <option value="@tipo">@tipo</option>
@@ -62,7 +67,8 @@
                             </div>
                             <div class="col-md-8 mb-3">
                                 <label class="form-label">Documento</label>
-                                <InputText @bind-Value="cliente.Documento"
+                                <InputText @ref="inputDocumento"
+                                           @bind-Value="cliente.Documento"
                                            class="form-control"
                                            placeholder="@ObterPlaceholder()"
                                            maxlength="@ObterMaximoCaracteres()" />
@@ -73,7 +79,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Telefone<span class="text-danger">*</span></label>
-                            <InputText class="form-control" @bind-Value="cliente.Telefone" maxlength="15" required/>
+                            <InputText class="form-control" @bind-Value="cliente.Telefone" maxlength="15" required />
                         </div>
 
                         <div class="row mb-4">
@@ -109,21 +115,58 @@
     private bool isInativo = false;
     private string? mensagemSucesso;
     private string? mensagemErro;
+    private InputText? inputDocumento; // Referência para o campo TipoDocumento no HTML
+    private TipoDocumento _tipoSelecionado;
 
     protected override async Task OnInitializedAsync()
     {
         if (id > 0)
         {
             cliente = DbFactory.CreateDbContext().Cliente.FirstOrDefault(o => o.Codigo == id) ?? new Cliente();
+            TipoSelecionado = cliente.TipoDocumento;
         }
+    }
+
+    private TipoDocumento TipoSelecionado
+    {
+        get => _tipoSelecionado;
+        set
+        {
+            if (_tipoSelecionado != value)
+            {
+                _tipoSelecionado = value;
+                cliente.TipoDocumento = value;
+                cliente.Documento = ""; // Limpa o campo
+
+                // Dispara a tarefa assíncrona para o JS sem travar o set
+                Task.Run(async () => await AtualizarMascara());
+            }
+        }
+    }
+
+    // Garante que a máscara seja aplicada ao carregar a página pela primeira vez
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("aplicarMascaraDocumento", inputDocumento?.Element, cliente.TipoDocumento.ToString());
+        }
+    }
+
+    private async Task AtualizarMascara()
+    {
+        // Aguarda um milissegundo para o Blazor renderizar a UI antes de chamar o JS
+        await Task.Delay(10);
+        await JS.InvokeVoidAsync("aplicarMascaraDocumento", inputDocumento?.Element, TipoSelecionado.ToString());
     }
 
     private async Task SalvarCliente()
     {
         try
         {
-            // Converte os booleanos da tela para os bytes do banco (1 ou 0)
             cliente.Inativo = isInativo ? (byte)1 : (byte)0;
+            cliente.TipoDocumento = TipoSelecionado;
+
             var context = DbFactory.CreateDbContext();
 
             if (cliente.Codigo > 0)
@@ -182,5 +225,10 @@
     private void Voltar()
     {
         Nav.NavigateTo("/Cliente");
+    }
+
+    private void Teste()
+    {
+        Console.WriteLine("Teste");
     }
 }

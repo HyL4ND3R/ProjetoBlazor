@@ -18,6 +18,27 @@
     <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="https://unpkg.com/imask"></script>
+    <script>
+        window.aplicarMascaraDocumento = (element, tipo) => {
+            if (!element) return;
+
+            // Se houver uma máscara anterior, destruímos para aplicar a nova
+            if (element.mask) element.mask.destroy();
+
+            let maskOptions;
+            if (tipo === 'CPF') {
+                maskOptions = { mask: '000.000.000-00' };
+            } else if (tipo === 'CNPJ') {
+                maskOptions = { mask: '00.000.000/0000-00' };
+            } else {
+                // Caso seja OUTROS ou qualquer outro, não aplica máscara (campo livre)
+                return;
+            }
+
+            element.mask = IMask(element, maskOptions);
+        };
+    </script>
 </body>
 
 </html>
