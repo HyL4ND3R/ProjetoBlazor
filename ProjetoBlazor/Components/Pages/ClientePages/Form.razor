@@ -70,7 +70,6 @@
                                 <InputText @ref="inputDocumento"
                                            @bind-Value="cliente.Documento"
                                            class="form-control"
-                                           placeholder="@ObterPlaceholder()"
                                            maxlength="@ObterMaximoCaracteres()" />
 
                                 <small class="text-muted">Formato esperado: @ObterPlaceholder()</small>
@@ -117,13 +116,16 @@
     private string? mensagemErro;
     private InputText? inputDocumento; // Referência para o campo TipoDocumento no HTML
     private TipoDocumento _tipoSelecionado;
+    private bool _carregamentoInicial;
 
     protected override async Task OnInitializedAsync()
     {
         if (id > 0)
         {
             cliente = DbFactory.CreateDbContext().Cliente.FirstOrDefault(o => o.Codigo == id) ?? new Cliente();
+            _carregamentoInicial = true;
             TipoSelecionado = cliente.TipoDocumento;
+            _carregamentoInicial = false;
         }
     }
 
@@ -136,10 +138,13 @@
             {
                 _tipoSelecionado = value;
                 cliente.TipoDocumento = value;
-                cliente.Documento = ""; // Limpa o campo
-
-                // Dispara a tarefa assíncrona para o JS sem travar o set
-                Task.Run(async () => await AtualizarMascara());
+                if (!_carregamentoInicial)
+                {
+                    // Limpa o campo
+                    cliente.Documento = "";
+                    // Dispara a tarefa assíncrona para o JS sem travar o set
+                    Task.Run(async () => await AtualizarMascara());
+                }
             }
         }
     }
