@@ -1,7 +1,7 @@
 ﻿@page "/Produto/Form"
 @page "/Produto/Form/{id:int}"
 
-<PageTitle>Operador</PageTitle>
+<PageTitle>Produto</PageTitle>
 
 <div class="container-fluid mt-3">
     <div class="row">
@@ -21,56 +21,46 @@
                         @mensagemErro
                     </div>
                 }
-                @if (operador.Codigo > 0)
+                @if (Produto.Codigo > 0)
                 {
                     <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Operador</h5>
+                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Produto</h5>
                     </div>
                 }
                 else
                 {
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastrar Operador</h5>
+                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastrar Produto</h5>
                     </div>
                 }
                 <div class="card-body">
-                    <EditForm Model="operador" OnValidSubmit="SalvarOperador">
+                    <EditForm Model="Produto" OnValidSubmit="SalvarProduto">
                         <DataAnnotationsValidator />
 
-                        @if (operador.Codigo > 0)
+                        @if (Produto.Codigo > 0)
                         {
                             <div class="mb-3">
                                 <label class="form-label">Código<span class="text-danger">*</span></label>
-                                <InputNumber class="form-control" @bind-Value="operador.Codigo" required disabled />
+                                <InputNumber class="form-control" @bind-Value="Produto.Codigo" required disabled />
                             </div>
                         }
 
                         <div class="mb-3">
-                            <label class="form-label">Nome do Operador <span class="text-danger">*</span></label>
-                            <InputText class="form-control" @bind-Value="operador.Nome" required />
+                            <label class="form-label">Descrição<span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="Produto.Nome" required />
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Senha <span class="text-danger">*</span></label>
-                            <InputText type="password" class="form-control" @bind-Value="operador.Senha" required />
+                            <label class="form-label">Valor<span class="text-danger">*</span></label>
+                            <InputNumber class="form-control" @bind-Value="Produto.Valor" required />
                         </div>
 
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="checkAdmin" @bind="isAdmin">
-                                    <label class="form-check-label" for="checkAdmin">
-                                        Perfil Administrador
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="checkInativo" @bind="isInativo">
-                                    <label class="form-check-label text-danger" for="checkInativo">
-                                        Usuário Inativo
-                                    </label>
-                                </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="checkInativo" @bind="isInativo">
+                                <label class="form-check-label text-danger" for="checkInativo">
+                                    Inativo
+                                </label>
                             </div>
                         </div>
 
@@ -91,9 +81,8 @@
 
 @code {
     [Parameter] public int? id { get; set; }
-    private Operador operador = new Operador();
-    // Variáveis auxiliares para os checkboxes na tela
-    private bool isAdmin = false;
+    private Produto Produto = new Produto();
+    // Variáveis auxiliares
     private bool isInativo = false;
     private string? mensagemSucesso;
     private string? mensagemErro;
@@ -102,36 +91,34 @@
     {
         if (id > 0)
         {
-            operador = DbFactory.CreateDbContext().Operador.FirstOrDefault(o => o.Codigo == id) ?? new Operador();
+            Produto = DbFactory.CreateDbContext().Produto.FirstOrDefault(o => o.Codigo == id) ?? new Produto();
         }
     }
 
-    private async Task SalvarOperador()
+    private async Task SalvarProduto()
     {
         try
         {
-            // Converte os booleanos da tela para os bytes do banco (1 ou 0)
-            operador.Admin = isAdmin ? (byte)1 : (byte)0;
-            operador.Inativo = isInativo ? (byte)1 : (byte)0;
+            Produto.Inativo = isInativo ? (byte)1 : (byte)0;
             var context = DbFactory.CreateDbContext();
 
-            if (operador.Codigo > 0)
+            if (Produto.Codigo > 0)
             {
                 // Se o código for maior que 0, é uma edição, então atualiza o objeto no banco
-                context.Operador.Update(operador);
+                context.Produto.Update(Produto);
                 await context.SaveChangesAsync();
             }
             else
             {
-                // Se não é uma inclusão, então adiciona o novo operador ao banco
-                context.Operador.Add(operador);
+                // Se não é uma inclusão, então adiciona o novo Produto ao banco
+                context.Produto.Add(Produto);
                 await context.SaveChangesAsync();
             }
-            mensagemSucesso = "Operador salvo com sucesso!";
+            mensagemSucesso = "Produto salvo com sucesso!";
 
-            // Se era inclusão, o EF preencheu o 'operador.Codigo' automaticamente.
+            // Se era inclusão, o EF preencheu o 'Produto.Codigo' automaticamente.
             // Agora "avisamos" o Blazor que a URL mudou para modo de edição, sem recarregar a página.
-            Nav.NavigateTo($"/Operador/Form/{operador.Codigo}", replace: true);
+            Nav.NavigateTo($"/Produto/Form/{Produto.Codigo}", replace: true);
 
             _ = Task.Delay(5000).ContinueWith(_ =>
 {
@@ -141,7 +128,7 @@
         }
         catch (Exception ex)
         {
-            mensagemErro = $"Erro ao salvar o operador: {ex.Message}";
+            mensagemErro = $"Erro ao salvar o Produto: {ex.Message}";
             _ = Task.Delay(5000).ContinueWith(_ =>
 {
     mensagemErro = null;
@@ -152,6 +139,6 @@
 
     private void Voltar()
     {
-        Nav.NavigateTo("/Operador");
+        Nav.NavigateTo("/Produto");
     }
 }
