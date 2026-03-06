@@ -54,7 +54,7 @@
                             class="@(ProdutoSelecionado?.Codigo == item.Codigo ? "table-primary" : "")">
                             <td>@item.Codigo</td>
                             <td>@item.Nome</td>
-                            <td>@item.Valor</td>
+                            <td>@item.Valor.ToString("N2")</td>
                             <td>
                                 <span class="badge @(item.Inativo == 1 ? "bg-danger" : "bg-success")">
                                     @(item.Inativo == 1 ? "Inativo" : "Ativo")
