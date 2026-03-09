@@ -1,4 +1,4 @@
-﻿@page "/Pedido/Form/{Controle:int?}"
+﻿@page "/Pedido/Form/{Controle:int}"
 
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
@@ -28,10 +28,10 @@
 <div class="card shadow-sm">
     <div class="card-header d-flex justify-content-between">
         <h6>Itens do Pedido</h6>
-        <button class="btn btn-sm btn-success" @onclick="() => AbrirFormItem(new PedidoItem())">
+        <button class="btn btn-sm btn-success" @onclick="() => NovoItem()">
             <i class="bi bi-plus"></i> Novo
         </button>
-        <button class="btn btn-sm btn-outline-primary" disabled="@(itemSelecionado == null)" @onclick="() => AbrirFormItem()">
+        <button class="btn btn-sm btn-outline-primary" disabled="@(itemSelecionado == null)" @onclick="() => AlterarItem()">
             <i class="bi bi-pencil"></i> Alterar
         </button>
         <button class="btn btn-sm btn-outline-danger" disabled="@(itemSelecionado == null)" @onclick="() => ExcluirItemPedido()">
@@ -71,7 +71,7 @@
 }
 
 @code {
-    [Parameter] public int? Controle { get; set; }
+    [Parameter] public int Controle { get; set; }
     private Pedido pedido = new() { Data = DateTime.Now };
     private List<Cliente> clientes = new();
     private List<PedidoItem> itens = new();
@@ -87,44 +87,80 @@
         }
     }
 
-    private void SelecionarLinha(PedidoItem it)
+    private void SelecionarLinha(PedidoItem item)
     {
         // Se clicar no que já está selecionado, desmarca
-        if (itemSelecionado?.Controle == it.Controle)
+        if (itemSelecionado?.Controle == item.Controle)
             itemSelecionado = null;
         else
-            itemSelecionado = it;
+            itemSelecionado = item;
     }
 
-    private void AbrirFormItem(PedidoItem item)
+    private void NovoItem()
     {
+        itemSelecionado = new PedidoItem
+        {
+            ControlePedido = pedido.Controle,
+            Item = itens.Count + 1
+        };
         mostrarModal = true;
+    }
+
+    private void AlterarItem()
+    {
+        if (itemSelecionado != null)
+        {
+            mostrarModal = true;
+        }
     }
 
     private async Task SalvarItemPedido(PedidoItem item)
     {
-        if (item.Controle == 0) {
-            var context = DbFactory.CreateDbContext();
+        try
+        {
+            if (item.Controle == 0)
+            {
+                var context = DbFactory.CreateDbContext();
 
-            if (item.Controle > 0)
-            {
-                // Se o código for maior que 0, é uma edição, então atualiza o objeto no banco
-                context.PedidoItem.Update(item);
-                await context.SaveChangesAsync();
+                if (item.Controle > 0)
+                {
+                    // Se o código for maior que 0, é uma edição, então atualiza o objeto no banco
+                    context.PedidoItem.Update(item);
+                    await context.SaveChangesAsync();
+                }
+                else
+                {
+                    // Se não é uma inclusão, então adiciona o novo operador ao banco
+                    context.PedidoItem.Add(item);
+                    await context.SaveChangesAsync();
+                }
+                await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularTotaisPedido {0}", item.ControlePedido);
             }
-            else
-            {
-                // Se não é uma inclusão, então adiciona o novo operador ao banco
-                context.PedidoItem.Add(item);
-                await context.SaveChangesAsync();
-            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao salvar item: {ex.Message}");
         }
         mostrarModal = false;
     }
 
     private async Task ExcluirItemPedido()
     {
-        //Ecluir item do banco e da lista de itens do pedido
+        try
+        {
+            if (itemSelecionado != null)
+            {
+                var context = DbFactory.CreateDbContext();
+                context.PedidoItem.Remove(itemSelecionado);
+                await context.SaveChangesAsync();
+                await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularItempedido {0}", itemSelecionado.ControlePedido);
+                await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularTotaisPedido {0}", itemSelecionado.ControlePedido);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao excluir item: {ex.Message}");
+        }
     }
 
     private void FecharModal() => mostrarModal = false;

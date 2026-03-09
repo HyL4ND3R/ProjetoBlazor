@@ -1,5 +1,128 @@
-﻿<h3>FormItem</h3>
+﻿
+
+<div class="modal fade show d-block" style="background: rgba(0,0,0,0.6); z-index: 1050;">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Inserir Item no Pedido</h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="OnClose"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row align-items-end mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Cód. Produto</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" @bind="Item.ProdutoCodigo" @onblur="BuscarProdutoPorCodigo" />
+                            <button class="btn btn-outline-secondary" type="button" @onclick="() => exibindoBusca = true">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label">Descrição do Produto</label>
+                        <input type="text" class="form-control bg-light" value="@Item.Descricao" readonly tabindex="-1" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Quantidade</label>
+                        <input type="number" class="form-control" @bind="Item.Quantidade" @bind:event="oninput" @onkeyup="CalcularTotal" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Valor Unitário</label>
+                        <input type="number" class="form-control" @bind="Item.ValorUn" @bind:event="oninput" @onkeyup="CalcularTotal" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Total Item</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="text" class="form-control fw-bold text-end" value="@Item.ValorTotal.ToString("N2")" readonly />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="OnClose">Cancelar</button>
+                <button class="btn btn-success" @onclick="Gravar" disabled="@(Item.ProdutoCodigo == 0)">
+                    <i class="bi bi-check-lg"></i> Confirmar Item
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (exibindoBusca)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.4); z-index: 1060; margin-top: 50px;">
+        <div class="modal-dialog modal-md shadow-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white py-2">
+                    <h6 class="modal-title">Pesquisar Produto</h6>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => exibindoBusca = false"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" placeholder="Digite o nome..." @bind="termoBusca" @bind:event="oninput" @onkeyup="FiltrarProdutos" />
+                    <div class="list-group overflow-auto" style="max-height: 300px;">
+                        @foreach (var p in produtosFiltrados)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelecionarProduto(p)">
+                                <strong>@p.Codigo</strong> - @p.Nome <span class="float-end text-muted">@p.Valor.ToString("C2")</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
+    [Parameter] public PedidoItem Item { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<PedidoItem> OnSave { get; set; }
 
+    private bool exibindoBusca = false;
+    private string termoBusca = "";
+    private List<Produto> todosProdutos = new();
+    private List<Produto> produtosFiltrados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        todosProdutos = await context.Produto.Where(p => p.Inativo == 0).ToListAsync();
+        produtosFiltrados = todosProdutos;
+    }
+
+    private void FiltrarProdutos()
+    {
+        produtosFiltrados = todosProdutos
+            .Where(p => p.Nome.Contains(termoBusca, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private async Task BuscarProdutoPorCodigo()
+    {
+        if (Item.ProdutoCodigo > 0)
+        {
+            var p = todosProdutos.FirstOrDefault(x => x.Codigo == Item.ProdutoCodigo);
+            if (p != null) SelecionarProduto(p);
+        }
+    }
+
+    private void SelecionarProduto(Produto p)
+    {
+        Item.ProdutoCodigo = p.Codigo;
+        Item.Descricao = p.Nome;
+        Item.ValorUn = p.Valor;
+        Item.Quantidade = 1;
+        CalcularTotal();
+        exibindoBusca = false;
+    }
+
+    private void CalcularTotal()
+    {
+        Item.ValorTotal = Item.Quantidade * Item.ValorUn;
+    }
+
+    private void Gravar() => OnSave.InvokeAsync(Item);
 }

@@ -83,8 +83,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbFactory.CreateDbContext();
-        operadores = await context.Operador.ToListAsync();
+        operadores = await DbFactory.CreateDbContext().Operador.ToListAsync();
     }
 
     private void SelecionarLinha(Operador op)
