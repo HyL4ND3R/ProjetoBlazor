@@ -6,7 +6,7 @@ namespace ProjetoBlazor.Models
     public class PedidoItem
     {
         [Key]
-        public int Controle { get; set; }
+        public Int64 Controle { get; set; }
         public Int64 ControlePedido { get; set; }
         public int Item { get; set; }
         public int ProdutoCodigo { get; set; }
