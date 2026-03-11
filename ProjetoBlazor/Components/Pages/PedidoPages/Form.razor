@@ -1,167 +1,142 @@
-﻿@page "/Pedido/Form/{Controle:int}"
+﻿@page "/Pedido/Form/{Controle:int?}"
 
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Pedido #@pedido.Codigo</h5>
-        <span class="badge bg-info">Total: @((pedido.ValorTotal ?? 0).ToString("C2"))</span>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-3">
-                <label>Data</label>
-                <input type="date" class="form-control" @bind="pedido.Data" />
-            </div>
-            <div class="col-md-6">
-                <label>Cliente</label>
-                <select class="form-select" @bind="pedido.ClienteCodigo">
-                    <option value="0">Selecione...</option>
-                    @foreach (var c in clientes)
-                    {
-                        <option value="@c.Codigo">@c.Nome</option>
-                    }
-                </select>
+<div class="container-fluid">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Dados do Pedido #@(pedido.Codigo == 0 ? "Novo" : pedido.Codigo)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Data Pedido</label>
+                    <input type="date" class="form-control" @bind="pedido.Data" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Cód. Cliente</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" @bind="pedido.ClienteCodigo" @onblur="BuscarClientePorCodigo" />
+                        <button class="btn btn-outline-secondary" type="button" @onclick="() => exibindoBuscaCliente = true">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">Nome do Cliente</label>
+                    <input type="text" class="form-control bg-light" value="@nomeCliente" readonly tabindex="-1" />
+                </div>
+
+                <div class="col-md-3 text-end">
+                    <label class="form-label d-block text-muted">Total do Pedido</label>
+                    <h3 class="text-primary">@((pedido.ValorTotal ?? 0).ToString("C2"))</h3>
+                </div>
             </div>
         </div>
     </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 text-uppercase fw-bold">Itens do Pedido</h6>
+            <button class="btn btn-sm btn-success" @onclick="() => AbrirModalItem(new PedidoItem())">
+                <i class="bi bi-plus-circle"></i> Adicionar Item
+            </button>
+        </div>
+        </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between">
-        <h6>Itens do Pedido</h6>
-        <button class="btn btn-sm btn-success" @onclick="() => NovoItem()">
-            <i class="bi bi-plus"></i> Novo
-        </button>
-        <button class="btn btn-sm btn-outline-primary" disabled="@(itemSelecionado == null)" @onclick="() => AlterarItem()">
-            <i class="bi bi-pencil"></i> Alterar
-        </button>
-        <button class="btn btn-sm btn-outline-danger" disabled="@(itemSelecionado == null)" @onclick="() => ExcluirItemPedido()">
-            <i class="bi bi-trash"></i> Excluir
-        </button>
-    </div>
-    <table class="table table-hover mb-0">
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th>Produto</th>
-                <th>Qtd</th>
-                <th>Unitário</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in itens)
-            {
-                <tr @onclick="() => SelecionarLinha(item)"
-                    style="cursor: pointer;"
-                    class="@(itemSelecionado?.Controle == item.Controle ? "table-primary" : "")">
-                    <td>@item.Item</td>
-                    <td>@item.Descricao</td>
-                    <td>@item.Quantidade</td>
-                    <td>@item.ValorUn.ToString("N2")</td>
-                    <td>@item.ValorTotal.ToString("N2")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-
-@if (mostrarModal)
+@if (exibindoBuscaCliente)
 {
-    <FormItem Item="itemSelecionado" OnClose="FecharModal" OnSave="SalvarItemPedido" />
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5); z-index: 2000;">
+        <div class="modal-dialog modal-md shadow-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white py-2">
+                    <h6 class="modal-title">Pesquisar Cliente</h6>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => exibindoBuscaCliente = false"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" placeholder="Nome do cliente..." @bind="termoBuscaCliente" @bind:event="oninput" @onkeyup="FiltrarClientes" />
+                    <div class="list-group overflow-auto" style="max-height: 250px;">
+                        @foreach (var c in clientesFiltrados)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelecionarCliente(c)">
+                                <strong>@c.Codigo</strong> - @c.Nome
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (mostrarModalItem)
+{
+    <FormItem Item="itemEdicao" OnClose="() => mostrarModalItem = false" OnSave="SalvarItemPedido" />
 }
 
 @code {
-    [Parameter] public int Controle { get; set; }
-    private Pedido pedido = new() { Data = DateTime.Now };
-    private List<Cliente> clientes = new();
-    private List<PedidoItem> itens = new();
-    private bool mostrarModal = false;
-    private PedidoItem? itemSelecionado;
+    [Parameter] public int? Controle { get; set; }
+    private Pedido pedido = new() { Data = DateTime.Now, Codigo = 0 };
+    private string nomeCliente = "Nenhum cliente selecionado";
+    
+    // Controle de Busca de Cliente
+    private bool exibindoBuscaCliente = false;
+    private string termoBuscaCliente = "";
+    private List<Cliente> todosClientes = new();
+    private List<Cliente> clientesFiltrados = new();
+
+    // Itens
+    private bool mostrarModalItem = false;
+    private PedidoItem itemEdicao = new();
 
     protected override async Task OnInitializedAsync()
     {
+        using var context = DbFactory.CreateDbContext();
+        todosClientes = await context.Cliente.ToListAsync();
+        clientesFiltrados = todosClientes;
+
         if (Controle > 0)
         {
-            pedido = DbFactory.CreateDbContext().Pedido.FirstOrDefault(p => p.Controle == Controle) ?? new Pedido();
-            itens = DbFactory.CreateDbContext().PedidoItem.Where(i => i.ControlePedido == pedido.Controle).ToList();
+            pedido = await context.Pedido.Include(x => x.Itens).FirstOrDefaultAsync(p => p.Controle == Controle);
+            if (pedido != null) 
+            {
+                var cli = todosClientes.FirstOrDefault(c => c.Codigo == pedido.ClienteCodigo);
+                nomeCliente = cli?.Nome ?? "Cliente não encontrado";
+            }
         }
     }
 
-    private void SelecionarLinha(PedidoItem item)
+    private void FiltrarClientes()
     {
-        // Se clicar no que já está selecionado, desmarca
-        if (itemSelecionado?.Controle == item.Controle)
-            itemSelecionado = null;
-        else
-            itemSelecionado = item;
+        clientesFiltrados = todosClientes
+            .Where(c => c.Nome.Contains(termoBuscaCliente, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
-    private void NovoItem()
+    private void BuscarClientePorCodigo()
     {
-        itemSelecionado = new PedidoItem
-        {
-            ControlePedido = pedido.Controle,
-            Item = itens.Count + 1
-        };
-        mostrarModal = true;
+        var cli = todosClientes.FirstOrDefault(c => c.Codigo == pedido.ClienteCodigo);
+        if (cli != null) SelecionarCliente(cli);
+        else nomeCliente = "Cód. inválido";
     }
 
-    private void AlterarItem()
+    private void SelecionarCliente(Cliente c)
     {
-        if (itemSelecionado != null)
-        {
-            mostrarModal = true;
-        }
+        pedido.ClienteCodigo = c.Codigo;
+        nomeCliente = c.Nome;
+        exibindoBuscaCliente = false;
     }
 
     private async Task SalvarItemPedido(PedidoItem item)
     {
-        try
-        {
-            if (item.Controle == 0)
-            {
-                var context = DbFactory.CreateDbContext();
-
-                if (item.Controle > 0)
-                {
-                    // Se o código for maior que 0, é uma edição, então atualiza o objeto no banco
-                    context.PedidoItem.Update(item);
-                    await context.SaveChangesAsync();
-                }
-                else
-                {
-                    // Se não é uma inclusão, então adiciona o novo operador ao banco
-                    context.PedidoItem.Add(item);
-                    await context.SaveChangesAsync();
-                }
-                await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularTotaisPedido {0}", item.ControlePedido);
-            }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao salvar item: {ex.Message}");
-        }
-        mostrarModal = false;
+        // Aqui você chamaria o PedidoService para salvar o item e rodar a SP
+        // Depois daria um Refresh no objeto 'pedido' para atualizar o ValorTotal (?? 0)
+        mostrarModalItem = false;
     }
 
-    private async Task ExcluirItemPedido()
+    private void AbrirModalItem(PedidoItem item)
     {
-        try
-        {
-            if (itemSelecionado != null)
-            {
-                var context = DbFactory.CreateDbContext();
-                context.PedidoItem.Remove(itemSelecionado);
-                await context.SaveChangesAsync();
-                await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularItempedido {0}", itemSelecionado.ControlePedido);
-                await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularTotaisPedido {0}", itemSelecionado.ControlePedido);
-            }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao excluir item: {ex.Message}");
-        }
+        itemEdicao = item;
+        mostrarModalItem = true;
     }
-
-    private void FecharModal() => mostrarModal = false;
 }

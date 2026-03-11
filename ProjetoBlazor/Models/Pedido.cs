@@ -12,5 +12,6 @@ namespace ProjetoBlazor.Models
         public DateTime Data { get; set; }
         public decimal? QtdeTotal { get; set; } = 0;
         public decimal? ValorTotal { get; set; } = 0;
+        public List<PedidoItem> Itens { get; set; } = new List<PedidoItem>();
     }
 }
