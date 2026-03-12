@@ -40,10 +40,11 @@
             <table class="table table-hover border">
                 <thead class="table-dark">
                     <tr>
-                        <th>Pedido</th>
+                        <th># Pedido</th>
+                        <th>Cod</th>
                         <th>Cliente</th>
-                        <th>Data</th>
-                        <th>Valor Total</th>
+                        <th class="text-center">Data</th>
+                        <th class="text-end">Valor Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,10 +53,23 @@
                         <tr @onclick="() => SelecionarLinha(item)"
                             style="cursor: pointer;"
                             class="@(pedidoSelecionado?.Codigo == item.Codigo ? "table-primary" : "")">
-                            <td>@item.Codigo</td>
-                            <td>@item.ClienteCodigo</td>
-                            <td>@item.Data</td>
-                            <td>@item.ValorTotal</td>
+
+                            @* 1. Código com preenchimento de zeros*@
+                            <td class="fw-bold">@item.Codigo.ToString("D4")</td>
+
+                            @* 2. Código Cliente *@
+                            <td> @item.ClienteCodigo</td>
+
+                            @* 3. Nome Cliente *@
+                            <td>@item.ClienteNome</td>
+
+                            @* 4. Data formatada para o padrão brasileiro *@
+                            <td class="text-center">@item.Data.ToString("dd/MM/yyyy")</td>
+
+                            @* 5. Valor total formatado como Moeda *@
+                            <td class="text-end fw-bold text-primary">
+                                @((item.ValorTotal ?? 0).ToString("C2"))
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -79,7 +93,22 @@
     protected override async Task OnInitializedAsync()
     {
         using var context = DbFactory.CreateDbContext();
-        pedidos = await context.Pedido.ToListAsync();
+
+        // Fazemos um Join simples para trazer o nome do cliente sem precisar alterar a Model
+        var query = from p in context.Pedido
+                    join c in context.Cliente on p.ClienteCodigo equals c.Codigo
+                    select new { p, NomeCliente = c.Nome };
+
+        var resultado = await query.ToListAsync();
+
+        // Vamos mapear para uma lista temporária ou usar um DTO.
+        // Para facilitar sua vida agora, vamos usar a propriedade 'Descricao' (ou outra string solta)
+        // do objeto Pedido para guardar o nome temporariamente na tela:
+        pedidos = resultado.Select(x =>
+        {
+            x.p.ClienteNome = x.NomeCliente;
+            return x.p;
+        }).ToList();
     }
 
     private void SelecionarLinha(Pedido pd)
