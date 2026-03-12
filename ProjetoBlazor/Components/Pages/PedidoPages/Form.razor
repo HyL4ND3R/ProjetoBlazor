@@ -3,46 +3,115 @@
 <div class="container-fluid">
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-dark text-white">
-            <h5 class="mb-0">Dados do Pedido #@(pedido.Codigo == 0 ? "Novo" : pedido.Codigo)</h5>
+            <h5 class="mb-0">Dados do Pedido</h5>
         </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">Data Pedido</label>
-                    <input type="date" class="form-control" @bind="pedido.Data" />
-                </div>
+                @* Coluna da Esquerda: Código e Cliente *@
+                <div class="col-md-9">
+                    @* Linha do Código do Pedido (Somente leitura se já existir) *@
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Código Pedido</label>
+                            <input type="text" class="form-control bg-light"
+                                   value="@(pedido.Codigo == 0 ? "NOVO" : pedido.Codigo.ToString())"
+                                   readonly tabindex="-1" />
+                        </div>
+                    </div>
 
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">Cód. Cliente</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" @bind="pedido.ClienteCodigo" @onblur="BuscarClientePorCodigo" />
-                        <button class="btn btn-outline-secondary" type="button" @onclick="() => exibindoBuscaCliente = true">
-                            <i class="bi bi-search"></i>
-                        </button>
+                    @* Linha do Cliente (Código, Botão e Nome) *@
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Cód. Cliente</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="pedido.ClienteCodigo" @onblur="BuscarClientePorCodigo" />
+                                <button class="btn btn-outline-secondary" type="button" @onclick="() => exibindoBuscaCliente = true">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <label class="form-label fw-bold">Nome do Cliente</label>
+                            <input type="text" class="form-control bg-light" value="@nomeCliente" readonly tabindex="-1" />
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-md-5">
-                    <label class="form-label fw-bold">Nome do Cliente</label>
-                    <input type="text" class="form-control bg-light" value="@nomeCliente" readonly tabindex="-1" />
-                </div>
+                @* Coluna da Direita: Data e Total *@
+                <div class="col-md-3 border-start ps-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Data Pedido</label>
+                        <input type="date" class="form-control" @bind="pedido.Data" />
+                    </div>
 
-                <div class="col-md-3 text-end">
-                    <label class="form-label d-block text-muted">Total do Pedido</label>
-                    <h3 class="text-primary">@((pedido.ValorTotal ?? 0).ToString("C2"))</h3>
+                    <div class="text-end">
+                        <label class="form-label d-block text-muted">Total do Pedido</label>
+                        <h3 class="text-primary fw-bold">@((pedido.ValorTotal ?? 0).ToString("C2"))</h3>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
     <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 text-uppercase fw-bold">Itens do Pedido</h6>
-            <button class="btn btn-sm btn-success" @onclick="() => AbrirModalItem(new PedidoItem())">
-                <i class="bi bi-plus-circle"></i> Adicionar Item
-            </button>
+        <div class="card-header d-flex align-items-center">
+            @* Grupo de botões à esquerda *@
+            <div class="btn-group me-3">
+                <button class="btn btn-sm btn-success" @onclick="() => AbrirModalItem(new PedidoItem { ControlePedido = pedido.Controle })">
+                    <i class="bi bi-plus-circle"></i> Inserir
+                </button>
+
+                <button class="btn btn-sm btn-primary" @onclick="() => AbrirModalItem(itemSelecionado!)" disabled="@(itemSelecionado == null)">
+                    <i class="bi bi-pencil"></i> Alterar
+                </button>
+
+                <button class="btn btn-sm btn-danger" @onclick="() => ExcluirItem(itemSelecionado!)" disabled="@(itemSelecionado == null)">
+                    <i class="bi bi-trash"></i> Excluir
+                </button>
+            </div>
+
+            @* Título empurrado para o restante do espaço *@
+            <h6 class="mb-0 text-uppercase fw-bold text-muted">Itens do Pedido</h6>
         </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th>Descrição</th>
+                            <th>Qtd</th>
+                            <th>Vl. Unit</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in itensPedido)
+                        {
+                            @* O segredo está no @onclick e na classe CSS condicional *@
+                            <tr @onclick="() => SelecionarLinha(item)"
+                                style="cursor: pointer;"
+                                class="@(itemSelecionado == item ? "table-primary" : "")">
+                                <td>@item.Item</td>
+                                <td>@item.Descricao</td>
+                                <td>@item.Quantidade.ToString("N2")</td>
+                                <td>@item.ValorUn.ToString("C2")</td>
+                                <td>@item.ValorTotal.ToString("C2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
+    </div>
+    @* Barra de Ações do Pedido *@
+    <div class="mt-4 mb-5 d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-secondary" @onclick="Cancelar">
+            <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button class="btn btn-primary btn-lg px-5 shadow" @onclick="SalvarPedido">
+            <i class="bi bi-check-lg"></i> Salvar Pedido
+        </button>
+    </div>
 </div>
 
 @if (exibindoBuscaCliente)
@@ -79,7 +148,7 @@
     [Parameter] public int? Controle { get; set; }
     private Pedido pedido = new() { Data = DateTime.Now, Codigo = 0 };
     private string nomeCliente = "Nenhum cliente selecionado";
-    
+
     // Controle de Busca de Cliente
     private bool exibindoBuscaCliente = false;
     private string termoBuscaCliente = "";
@@ -89,6 +158,8 @@
     // Itens
     private bool mostrarModalItem = false;
     private PedidoItem itemEdicao = new();
+    private List<PedidoItem> itensPedido = new();
+    private PedidoItem? itemSelecionado;
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,14 +167,37 @@
         todosClientes = await context.Cliente.ToListAsync();
         clientesFiltrados = todosClientes;
 
-        if (Controle > 0)
+        if (Controle.HasValue && Controle > 0)
         {
-            pedido = await context.Pedido.Include(x => x.Itens).FirstOrDefaultAsync(p => p.Controle == Controle);
-            if (pedido != null) 
+            var pedidoBanco = await context.Pedido.FirstOrDefaultAsync(p => p.Controle == Controle);
+
+            if (pedidoBanco != null)
             {
+                pedido = pedidoBanco;
+
+                // Busca os itens do pedido
+                itensPedido = await context.PedidoItem
+                    .Where(i => i.ControlePedido == Controle)
+                    .ToListAsync();
+
+                // Atualiza o nome do cliente
                 var cli = todosClientes.FirstOrDefault(c => c.Codigo == pedido.ClienteCodigo);
                 nomeCliente = cli?.Nome ?? "Cliente não encontrado";
             }
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Controle.HasValue && Controle > 0 && pedido.Controle == 0)
+        {
+            using var context = DbFactory.CreateDbContext();
+            var p = await context.Pedido.FirstOrDefaultAsync(x => x.Controle == Controle);
+            if (p != null) pedido = p;
+
+            itensPedido = await context.PedidoItem
+                .Where(i => i.ControlePedido == Controle)
+                .ToListAsync();
         }
     }
 
@@ -127,16 +221,80 @@
         exibindoBuscaCliente = false;
     }
 
-    private async Task SalvarItemPedido(PedidoItem item)
+    private void Cancelar()
     {
-        // Aqui você chamaria o PedidoService para salvar o item e rodar a SP
-        // Depois daria um Refresh no objeto 'pedido' para atualizar o ValorTotal (?? 0)
-        mostrarModalItem = false;
+        Nav.NavigateTo("/Pedido");
+    }
+
+    private async Task SalvarPedido()
+    {
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
+
+            if (pedido.ClienteCodigo <= 0) return;
+
+            if (pedido.Controle > 0)
+            {
+                context.Pedido.Update(pedido);
+            }
+            else
+            {
+                context.Pedido.Add(pedido);
+            }
+
+            await context.SaveChangesAsync();
+
+            // O Entity Framework preenche o pedido.Controle automaticamente após o SaveChanges
+            // Agora forçamos a URL a mudar para o modo de edição com o novo ID
+            // O 'replace: true' evita que o usuário "volte" para a tela de inclusão vazia
+            Nav.NavigateTo($"/Pedido/Form/{pedido.Controle}", replace: true);
+
+            // Opcional: Se você tiver mensagens de feedback na tela
+            await JS.InvokeVoidAsync("alert", "Pedido salvo com sucesso!");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao salvar: {ex.Message}");
+            Console.WriteLine($"Erro ao salvar: {ex.Message}");
+        }
     }
 
     private void AbrirModalItem(PedidoItem item)
     {
         itemEdicao = item;
         mostrarModalItem = true;
+    }
+
+    private void SelecionarLinha(PedidoItem item)
+    {
+        // Se clicar na mesma linha já selecionada, ele desseleciona
+        if (itemSelecionado == item)
+            itemSelecionado = null;
+        else
+            itemSelecionado = item;
+    }
+
+    private async Task SalvarItemPedido(PedidoItem item)
+    {
+        // ... sua lógica de salvar existente ...
+
+        itemSelecionado = null; // Limpa seleção após salvar
+        mostrarModalItem = false;
+    }
+
+    private async Task ExcluirItem(PedidoItem item)
+    {
+        if (item == null) return;
+
+        using var context = DbFactory.CreateDbContext();
+        context.PedidoItem.Remove(item);
+        await context.SaveChangesAsync();
+
+        itensPedido.Remove(item);
+        pedido.ValorTotal = itensPedido.Sum(i => i.ValorTotal);
+
+        itemSelecionado = null; // Limpa seleção após excluir
     }
 }
