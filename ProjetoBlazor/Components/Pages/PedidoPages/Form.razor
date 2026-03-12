@@ -240,6 +240,7 @@
             }
             else
             {
+                pedido.Codigo = await context.Pedido.MaxAsync(p => (int?)p.Codigo) + 1 ?? 1; // Gera próximo código
                 context.Pedido.Add(pedido);
             }
 
@@ -278,7 +279,37 @@
 
     private async Task SalvarItemPedido(PedidoItem item)
     {
-        // ... sua lógica de salvar existente ...
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
+
+            if (item.Controle == 0)
+            {
+                // Novo item
+                item.Item = itensPedido.Count > 0 ? itensPedido.Max(i => i.Item) + 1 : 1; // Próximo número de item
+                context.PedidoItem.Add(item);
+                await context.SaveChangesAsync();
+                itensPedido.Add(item);
+            }
+            else
+            {
+                // Item existente
+                context.PedidoItem.Update(item);
+                await context.SaveChangesAsync();
+                // Atualiza a lista local
+                var index = itensPedido.FindIndex(i => i.Controle == item.Controle);
+                if (index >= 0) itensPedido[index] = item;
+            }
+            
+            await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularTotaisPedido {0}", item.ControlePedido);
+            pedido.ValorTotal = itensPedido.Sum(i => i.ValorTotal);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao salvar item: {ex.Message}");
+            Console.WriteLine($"Erro ao salvar item: {ex.Message}");
+            return;
+        }
 
         itemSelecionado = null; // Limpa seleção após salvar
         mostrarModalItem = false;
@@ -288,13 +319,28 @@
     {
         if (item == null) return;
 
-        using var context = DbFactory.CreateDbContext();
-        context.PedidoItem.Remove(item);
-        await context.SaveChangesAsync();
+        // Faz a pergunta ao usuário usando o confirm do navegador
+        bool confirma = await JS.InvokeAsync<bool>("confirm", $"Deseja realmente excluir o item {item.ProdutoCodigo} - {item.Descricao}?");
 
-        itensPedido.Remove(item);
-        pedido.ValorTotal = itensPedido.Sum(i => i.ValorTotal);
+        if (confirma)
+        {
+            using var context = DbFactory.CreateDbContext();
+        
+            // Remove do Banco de Dados
+            context.PedidoItem.Remove(item);
+            await context.SaveChangesAsync();
 
-        itemSelecionado = null; // Limpa seleção após excluir
+            // Roda as suas Stored Procedures de recalcular (como você mencionou anteriormente)
+            await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularItemPedido {0}", item.ControlePedido);
+            await context.Database.ExecuteSqlRawAsync("EXEC sp_RecalcularTotaisPedido {0}", item.ControlePedido);
+
+            // Atualiza a lista na tela e os totais locais
+            itensPedido.Remove(item);
+            pedido.ValorTotal = itensPedido.Sum(i => i.ValorTotal);
+
+            itemSelecionado = null; // Limpa seleção após excluir
+        
+            StateHasChanged(); // Força a atualização da UI
+        }
     }
 }
