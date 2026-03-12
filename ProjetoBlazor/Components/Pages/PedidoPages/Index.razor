@@ -17,15 +17,15 @@
     </div>
 
     <div class="mb-3 d-flex gap-2">
-        <button class="btn btn-success" @onclick="NovoRegistro">
+        <button class="btn btn-success" @onclick="Novo">
             <i class="bi bi-plus-circle"></i> Novo
         </button>
 
-        <button class="btn btn-primary" disabled="@(pedidoSelecionado == null)" @onclick="EditarSelecionado">
+        <button class="btn btn-primary" disabled="@(pedidoSelecionado == null)" @onclick="Alterar">
             <i class="bi bi-pencil"></i> Alterar
         </button>
 
-        <button class="btn btn-danger" disabled="@(pedidoSelecionado == null)" @onclick="ExcluirSelecionado">
+        <button class="btn btn-danger" disabled="@(pedidoSelecionado == null)" @onclick="Excluir">
             <i class="bi bi-trash"></i> Excluir
         </button>
     </div>
@@ -122,20 +122,20 @@
 
     private void LimparFiltro() => filtroNome = "";
 
-    private void NovoRegistro()
+    private void Novo()
     {
         Nav.NavigateTo("/Pedido/Form/0");
     }
 
-    private void EditarSelecionado()
+    private void Alterar()
     {
         if (pedidoSelecionado != null)
         {
-            Nav.NavigateTo("/Pedido/Form/" + pedidoSelecionado.Codigo);
+            Nav.NavigateTo("/Pedido/Form/" + pedidoSelecionado.Controle);
         }
     }
 
-    private async void ExcluirSelecionado()
+    private async void Excluir()
     {
         if (pedidoSelecionado != null)
         {
