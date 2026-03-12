@@ -1,44 +1,52 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <base href="/" />
+        <ResourcePreloader />
+        <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+        <link rel="stylesheet" href="@Assets["app.css"]" />
+        <link rel="stylesheet" href="@Assets["ProjetoBlazor.styles.css"]" />
+        <ImportMap />
+        <link rel="icon" type="image/png" href="favicon.png" />
+        <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    </head>
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
-    <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["ProjetoBlazor.styles.css"]" />
-    <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
-</head>
+    <body>
+        <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+        <ReconnectModal />
+        <script src="@Assets["_framework/blazor.web.js"]"></script>
+        <script src="https://unpkg.com/imask"></script>
+        <script>
+            window.aplicarMascaraDocumento = (element, tipo) => {
+                if (!element) return;
 
-<body>
-    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
-    <ReconnectModal />
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="https://unpkg.com/imask"></script>
-    <script>
-        window.aplicarMascaraDocumento = (element, tipo) => {
-            if (!element) return;
+                // Se houver uma máscara anterior, destruímos para aplicar a nova
+                if (element.mask) element.mask.destroy();
 
-            // Se houver uma máscara anterior, destruímos para aplicar a nova
-            if (element.mask) element.mask.destroy();
+                let maskOptions;
+                if (tipo === 'CPF') {
+                    maskOptions = { mask: '000.000.000-00' };
+                } else if (tipo === 'CNPJ') {
+                    maskOptions = { mask: '00.000.000/0000-00' };
+                } else {
+                    // Caso seja OUTROS ou qualquer outro, não aplica máscara (campo livre)
+                    return;
+                }
 
-            let maskOptions;
-            if (tipo === 'CPF') {
-                maskOptions = { mask: '000.000.000-00' };
-            } else if (tipo === 'CNPJ') {
-                maskOptions = { mask: '00.000.000/0000-00' };
-            } else {
-                // Caso seja OUTROS ou qualquer outro, não aplica máscara (campo livre)
-                return;
-            }
+                element.mask = IMask(element, maskOptions);
+            };
 
-            element.mask = IMask(element, maskOptions);
-        };
-    </script>
-</body>
+            window.downloadFile = (fileName, contentBase64) => {
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = "data:application/pdf;base64," + contentBase64;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+        </script>
+    </body>
 
 </html>

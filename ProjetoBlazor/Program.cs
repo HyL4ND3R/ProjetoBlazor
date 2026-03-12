@@ -1,8 +1,9 @@
-﻿using ProjetoBlazor.Components;
+﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using ProjetoBlazor.Components;
 using ProjetoBlazor.Data;
-using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using ProjetoBlazor.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,9 @@ builder.Services.AddScoped<ProtectedSessionStorage>();
 
 // Add serviço de Sessão personalizado para pegar o operador logado
 builder.Services.AddScoped<ProjetoBlazor.Services.SessaoService>();
+
+// Add Classe de Relatórios
+builder.Services.AddScoped<Relatorios>();
 
 var app = builder.Build();
 

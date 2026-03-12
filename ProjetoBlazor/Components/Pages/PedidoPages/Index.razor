@@ -1,5 +1,6 @@
 ﻿@page "/Pedido"
 @rendermode InteractiveServer
+@inject Utils.Relatorios RelatoriosUtil
 
 <PageTitle>Pedidos</PageTitle>
 
@@ -27,6 +28,10 @@
 
         <button class="btn btn-danger" disabled="@(pedidoSelecionado == null)" @onclick="Excluir">
             <i class="bi bi-trash"></i> Excluir
+        </button>
+
+        <button class="btn btn-info" @onclick="ImprimirPedido" disabled="@(pedidoSelecionado == null)">
+            <i class="bi bi-printer"></i> Imprimir Pedido
         </button>
     </div>
 
@@ -166,6 +171,25 @@
                     await JS.InvokeVoidAsync("alert", "Erro ao excluir: " + ex.Message);
                 }
             }
+        }
+    }
+
+    private async Task ImprimirPedido()
+    {
+        if (pedidoSelecionado != null)
+        {
+            // 1. Busca os itens do pedido no banco se ainda não estiverem carregados
+            using var context = DbFactory.CreateDbContext();
+            var itens = await context.PedidoItem
+                                     .Where(x => x.ControlePedido == pedidoSelecionado.Controle)
+                                     .ToListAsync();
+
+            // 2. Gera os bytes do PDF
+            var pdfBytes = RelatoriosUtil.GerarVisualizacaoPedidoBytes(pedidoSelecionado, itens);
+
+            // 3. Converte para Base64 e envia para o JavaScript fazer o download
+            var base64 = Convert.ToBase64String(pdfBytes);
+            await JS.InvokeVoidAsync("downloadFile", $"Pedido_{pedidoSelecionado.Codigo}.pdf", base64);
         }
     }
 }
