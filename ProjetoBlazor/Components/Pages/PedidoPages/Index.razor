@@ -30,7 +30,7 @@
             <i class="bi bi-trash"></i> Excluir
         </button>
 
-        <button class="btn btn-info" @onclick="ImprimirPedido" disabled="@(pedidoSelecionado == null)">
+        <button class="btn btn-info" @onclick="Visualizar" disabled="@(pedidoSelecionado == null)">
             <i class="bi bi-printer"></i> Imprimir Pedido
         </button>
     </div>
@@ -174,7 +174,7 @@
         }
     }
 
-    private async Task ImprimirPedido()
+    private async Task Visualizar()
     {
         if (pedidoSelecionado != null)
         {

@@ -11,12 +11,12 @@
                         <DataAnnotationsValidator />
                         <div class="mb-3">
                             <label class="form-label">Data Inicial<span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" @value="relatorioPedidos.DataInicial" required />
+                            <input type="date" class="form-control" @bind="relatorioPedidos.DataInicial" required />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Data Final<span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" @value="relatorioPedidos.DataFinal" required />
+                            <input type="date" class="form-control" @bind="relatorioPedidos.DataFinal" required />
                         </div>
 
                         @* Linha do Cliente (Código, Botão e Nome) *@
@@ -137,6 +137,9 @@
 
         todosProdutos = await context.Produto.Where(c => c.Inativo == 0).ToListAsync();
         produtosFiltrados = todosProdutos;
+
+        relatorioPedidos.DataInicial = DateTime.Today;
+        relatorioPedidos.DataFinal = DateTime.Today;
     }
 
     private void FiltrarClientes()
@@ -180,9 +183,40 @@
         exibindoBuscaProduto = false;
     }
 
-    private void Visualizar()
+    private async void Visualizar()
     {
-        // Lógica para gerar o relatório com base nos filtros selecionados
-        // Pode ser uma navegação para outra página ou a exibição de um componente de relatório
+        try
+        {
+
+            using var context = DbFactory.CreateDbContext();
+
+            var query = from p in context.Pedido
+                        join i in context.PedidoItem on p.Controle equals i.ControlePedido
+                        join c in context.Cliente on p.ClienteCodigo equals c.Codigo
+                        where p.Data >= relatorioPedidos.DataInicial && p.Data <= relatorioPedidos.DataFinal
+                            && (relatorioPedidos.CodCliente == null || p.ClienteCodigo == relatorioPedidos.CodCliente)
+                            && (relatorioPedidos.CodProduto == null || i.ProdutoCodigo == relatorioPedidos.CodProduto)
+                        select new PedidoRelatorioDTO
+                        {
+                            PedidoCodigo = p.Codigo,
+                            ClienteCodigo = p.ClienteCodigo,
+                            ClienteNome = c.Nome,
+                            DataPedido = p.Data,
+                            // Usando ?? 0 pois QtdeTotal e ValorTotal podem ser nulos no banco
+                            QuantidadeTotalPedido = (decimal)(p.QtdeTotal ?? 0),
+                            ValorTotalPedido = (decimal)(p.ValorTotal ?? 0),
+                    
+                            ProdutoCodigo = i.ProdutoCodigo,
+                            ProdutoDescricao = i.Descricao,
+                            ProdutoQuantidade = i.Quantidade,
+                            ProdutoValorUn = i.ValorUn,
+                            ProdutoValorTotal = i.ValorTotal
+                        };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao gerar relatório: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Ocorreu um erro ao gerar o relatório. Verifique os dados e tente novamente.");
+        }
     }
 }

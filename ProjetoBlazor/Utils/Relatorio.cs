@@ -78,61 +78,63 @@ namespace ProjetoBlazor.Utils
             }
         }
 
-        public void GerarRelatorioPedido(List<PedidoRelatorioDTO> dados)
+        public byte[] GerarRelatorioPedido(List<PedidoRelatorioDTO> dados)
         {
-            string caminhoPdf = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "RelatorioPedidos.pdf");
-            PdfFont fNormal = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
-            PdfFont fBold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
-
-            using (PdfWriter writer = new PdfWriter(caminhoPdf))
+            using (MemoryStream ms = new MemoryStream())
             {
-                using (PdfDocument pdf = new PdfDocument(writer))
+                PdfFont fNormal = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+                PdfFont fBold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+
+                using (PdfWriter writer = new PdfWriter(ms))
                 {
-                    Document doc = new Document(pdf, PageSize.A4);
-
-                    // Cabeçalho e Filtros
-                    doc.Add(new Paragraph("RELATÓRIO DE PEDIDOS").SetFont(fBold).SetFontSize(16).SetTextAlignment(TextAlignment.CENTER));
-                    doc.Add(new LineSeparator(new SolidLine()));
-
-                    // Agrupando os dados por Pedido para criar a estrutura mestre-detalhe
-                    var pedidosAgrupados = dados.GroupBy(p => p.PedidoCodigo);
-
-                    foreach (var grupo in pedidosAgrupados)
+                    using (PdfDocument pdf = new PdfDocument(writer))
                     {
-                        var infoPedido = grupo.First();
+                        Document doc = new Document(pdf, PageSize.A4);
 
-                        // Linha do Pedido (Mestre)
-                        iText.Layout.Element.Table tabMestre = new iText.Layout.Element.Table(UnitValue.CreatePercentArray(new float[] { 15, 45, 20, 20 })).UseAllAvailableWidth().SetMarginTop(10);
-                        tabMestre.SetBackgroundColor(ColorConstants.LIGHT_GRAY);
+                        // Cabeçalho e Filtros
+                        doc.Add(new Paragraph("RELATÓRIO DE PEDIDOS").SetFont(fBold).SetFontSize(16).SetTextAlignment(TextAlignment.CENTER));
+                        doc.Add(new LineSeparator(new SolidLine()));
 
-                        tabMestre.AddCell(new Cell().Add(new Paragraph($"Ped: {infoPedido.PedidoCodigo}").SetFont(fBold)));
-                        tabMestre.AddCell(new Cell().Add(new Paragraph($"Cliente: {infoPedido.ClienteNome}").SetFont(fBold)));
-                        tabMestre.AddCell(new Cell().Add(new Paragraph($"Itens: {grupo.Sum(x => x.QuantidadeTotalPedido):N2}").SetFont(fBold)));
-                        tabMestre.AddCell(new Cell().Add(new Paragraph($"Total: {infoPedido.ValorTotalPedido:C2}").SetFont(fBold)));
-                        doc.Add(tabMestre);
+                        // Agrupando os dados por Pedido para criar a estrutura mestre-detalhe
+                        var pedidosAgrupados = dados.GroupBy(p => p.PedidoCodigo);
 
-                        // Tabela de Itens (Detalhe)
-                        iText.Layout.Element.Table tabDetalhe = new iText.Layout.Element.Table(UnitValue.CreatePercentArray(new float[] { 10, 45, 15, 15, 15 })).UseAllAvailableWidth();
-                        tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("Cód").SetFontSize(8).SetFont(fBold)));
-                        tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("Descrição").SetFontSize(8).SetFont(fBold)));
-                        tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("Qtde").SetFontSize(8).SetFont(fBold)));
-                        tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("V.Un").SetFontSize(8).SetFont(fBold)));
-                        tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("V.Tot").SetFontSize(8).SetFont(fBold)));
-
-                        foreach (var item in grupo)
+                        foreach (var grupo in pedidosAgrupados)
                         {
-                            tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoCodigo.ToString()).SetFontSize(8)));
-                            tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoDescricao).SetFontSize(8)));
-                            tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoQuantidade.ToString("N2")).SetFontSize(8)));
-                            tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoValorUn.ToString("N2")).SetFontSize(8)));
-                            tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoValorTotal.ToString("N2")).SetFontSize(8)));
+                            var infoPedido = grupo.First();
+
+                            // Linha do Pedido (Mestre)
+                            iText.Layout.Element.Table tabMestre = new iText.Layout.Element.Table(UnitValue.CreatePercentArray(new float[] { 15, 45, 20, 20 })).UseAllAvailableWidth().SetMarginTop(10);
+                            tabMestre.SetBackgroundColor(ColorConstants.LIGHT_GRAY);
+
+                            tabMestre.AddCell(new Cell().Add(new Paragraph($"Ped: {infoPedido.PedidoCodigo}").SetFont(fBold)));
+                            tabMestre.AddCell(new Cell().Add(new Paragraph($"Cliente: {infoPedido.ClienteNome}").SetFont(fBold)));
+                            tabMestre.AddCell(new Cell().Add(new Paragraph($"Itens: {grupo.Sum(x => x.QuantidadeTotalPedido):N2}").SetFont(fBold)));
+                            tabMestre.AddCell(new Cell().Add(new Paragraph($"Total: {infoPedido.ValorTotalPedido:C2}").SetFont(fBold)));
+                            doc.Add(tabMestre);
+
+                            // Tabela de Itens (Detalhe)
+                            iText.Layout.Element.Table tabDetalhe = new iText.Layout.Element.Table(UnitValue.CreatePercentArray(new float[] { 10, 45, 15, 15, 15 })).UseAllAvailableWidth();
+                            tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("Cód").SetFontSize(8).SetFont(fBold)));
+                            tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("Descrição").SetFontSize(8).SetFont(fBold)));
+                            tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("Qtde").SetFontSize(8).SetFont(fBold)));
+                            tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("V.Un").SetFontSize(8).SetFont(fBold)));
+                            tabDetalhe.AddHeaderCell(new Cell().Add(new Paragraph("V.Tot").SetFontSize(8).SetFont(fBold)));
+
+                            foreach (var item in grupo)
+                            {
+                                tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoCodigo.ToString()).SetFontSize(8)));
+                                tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoDescricao).SetFontSize(8)));
+                                tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoQuantidade.ToString("N2")).SetFontSize(8)));
+                                tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoValorUn.ToString("N2")).SetFontSize(8)));
+                                tabDetalhe.AddCell(new Cell().Add(new Paragraph(item.ProdutoValorTotal.ToString("N2")).SetFontSize(8)));
+                            }
+                            doc.Add(tabDetalhe);
                         }
-                        doc.Add(tabDetalhe);
+                        doc.Close();
                     }
-                    doc.Close();
                 }
+                return ms.ToArray();
             }
-            Process.Start(new ProcessStartInfo(caminhoPdf) { UseShellExecute = true });
         }
     }
 }
