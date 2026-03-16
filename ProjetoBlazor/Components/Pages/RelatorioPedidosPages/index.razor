@@ -1,0 +1,188 @@
+﻿@page "/RelatorioPedidos"
+
+<PageTitle>Relatório Pedidos</PageTitle>
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <EditForm Model="relatorioPedidos" OnValidSubmit="Visualizar">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label class="form-label">Data Inicial<span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" @value="relatorioPedidos.DataInicial" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Data Final<span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" @value="relatorioPedidos.DataFinal" required />
+                        </div>
+
+                        @* Linha do Cliente (Código, Botão e Nome) *@
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Cód. Cliente</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" @bind="relatorioPedidos.CodCliente" @onblur="BuscarClientePorCodigo" />
+                                    <button class="btn btn-outline-secondary" type="button" @onclick="() => exibindoBuscaCliente = true">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label fw-bold">Nome do Cliente</label>
+                                <input type="text" class="form-control bg-light" value="@nomeCliente" readonly tabindex="-1" />
+                            </div>
+                        </div>
+
+                        @* Linha do Produto (Código, Botão e Nome) *@
+                        <div class="row align-items-end mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Cód. Produto</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" @bind="relatorioPedidos.CodProduto" @onblur="BuscarProdutoPorCodigo" />
+                                    <button class="btn btn-outline-secondary" type="button" @onclick="() => exibindoBuscaProduto = true">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label">Descrição do Produto</label>
+                                <input type="text" class="form-control bg-light" value="@nomeProduto" readonly tabindex="-1" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg"></i> Visualizar
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (exibindoBuscaProduto && !exibindoBuscaCliente)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.4); z-index: 1060; margin-top: 50px;">
+        <div class="modal-dialog modal-md shadow-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white py-2">
+                    <h6 class="modal-title">Pesquisar Produto</h6>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => exibindoBuscaProduto = false"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" placeholder="Digite o nome..." @bind="termoBuscaProduto" @bind:event="oninput" @onkeyup="FiltrarProdutos" />
+                    <div class="list-group overflow-auto" style="max-height: 300px;">
+                        @foreach (var p in produtosFiltrados)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelecionarProduto(p)">
+                                <strong>@p.Codigo</strong> - @p.Nome <span class="float-end text-muted">@p.Valor.ToString("C2")</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (exibindoBuscaCliente && !exibindoBuscaProduto)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5); z-index: 2000;">
+        <div class="modal-dialog modal-md shadow-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white py-2">
+                    <h6 class="modal-title">Pesquisar Cliente</h6>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => exibindoBuscaCliente = false"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" placeholder="Nome do cliente..." @bind="termoBuscaCliente" @bind:event="oninput" @onkeyup="FiltrarClientes" />
+                    <div class="list-group overflow-auto" style="max-height: 250px;">
+                        @foreach (var c in clientesFiltrados)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action" @onclick="() => SelecionarCliente(c)">
+                                <strong>@c.Codigo</strong> - @c.Nome
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private RelatorioPedidos relatorioPedidos = new();
+    private bool exibindoBuscaProduto = false;
+    private bool exibindoBuscaCliente = false;
+    private string nomeCliente = "";
+    private string nomeProduto = "";
+    private string termoBuscaCliente = "";
+    private string termoBuscaProduto = "";
+    private List<Cliente> todosClientes = new();
+    private List<Cliente> clientesFiltrados = new();
+    private List<Produto> todosProdutos = new();
+    private List<Produto> produtosFiltrados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        todosClientes = await context.Cliente.Where(c => c.Inativo == 0).ToListAsync();
+        clientesFiltrados = todosClientes;
+
+        todosProdutos = await context.Produto.Where(c => c.Inativo == 0).ToListAsync();
+        produtosFiltrados = todosProdutos;
+    }
+
+    private void FiltrarClientes()
+    {
+        clientesFiltrados = todosClientes
+            .Where(c => c.Nome.Contains(termoBuscaCliente, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void FiltrarProdutos()
+    {
+        produtosFiltrados = todosProdutos
+            .Where(c => c.Nome.Contains(termoBuscaProduto, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+
+    private void BuscarClientePorCodigo()
+    {
+        var cli = todosClientes.FirstOrDefault(c => c.Codigo == relatorioPedidos.CodCliente);
+        if (cli != null) SelecionarCliente(cli);
+        else nomeCliente = "Cód. inválido";
+    }
+
+    private async Task BuscarProdutoPorCodigo()
+    {
+        var pro = todosProdutos.FirstOrDefault(p => p.Codigo == relatorioPedidos.CodProduto);
+        if (pro != null) SelecionarProduto(pro);
+        else nomeProduto = "Cód. inválido";
+    }
+
+    private void SelecionarCliente(Cliente c)
+    {
+        relatorioPedidos.CodCliente = c.Codigo;
+        nomeCliente = c.Nome;
+        exibindoBuscaCliente = false;
+    }
+
+    private void SelecionarProduto(Produto p)
+    {
+        relatorioPedidos.CodProduto = p.Codigo;
+        nomeProduto = p.Nome;
+        exibindoBuscaProduto = false;
+    }
+
+    private void Visualizar()
+    {
+        // Lógica para gerar o relatório com base nos filtros selecionados
+        // Pode ser uma navegação para outra página ou a exibição de um componente de relatório
+    }
+}

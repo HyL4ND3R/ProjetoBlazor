@@ -164,7 +164,7 @@
     protected override async Task OnInitializedAsync()
     {
         using var context = DbFactory.CreateDbContext();
-        todosClientes = await context.Cliente.ToListAsync();
+        todosClientes = await context.Cliente.Where(c => c.Inativo == 0).ToListAsync();
         clientesFiltrados = todosClientes;
 
         if (Controle.HasValue && Controle > 0)
@@ -181,7 +181,7 @@
                     .ToListAsync();
 
                 // Atualiza o nome do cliente
-                var cli = todosClientes.FirstOrDefault(c => c.Codigo == pedido.ClienteCodigo);
+                var cli = todosClientes.FirstOrDefault(c => c.Codigo == pedido.ClienteCodigo && c.Inativo == 0);
                 nomeCliente = cli?.Nome ?? "Cliente não encontrado";
             }
         }
@@ -209,7 +209,7 @@
 
     private void BuscarClientePorCodigo()
     {
-        var cli = todosClientes.FirstOrDefault(c => c.Codigo == pedido.ClienteCodigo);
+        var cli = todosClientes.FirstOrDefault(c => c.Codigo == pedido.ClienteCodigo && c.Inativo == 0);
         if (cli != null) SelecionarCliente(cli);
         else nomeCliente = "Cód. inválido";
     }
