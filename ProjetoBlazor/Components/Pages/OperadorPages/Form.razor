@@ -103,6 +103,8 @@
         if (id > 0)
         {
             operador = DbFactory.CreateDbContext().Operador.FirstOrDefault(o => o.Codigo == id) ?? new Operador();
+            isAdmin = operador.Admin == 1; // Converte o byte do banco para booleano
+            isInativo = operador.Inativo == 1; // Converte o byte do banco para booleano
         }
     }
 

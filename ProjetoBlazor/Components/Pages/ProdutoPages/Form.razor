@@ -92,6 +92,7 @@
         if (id > 0)
         {
             Produto = DbFactory.CreateDbContext().Produto.FirstOrDefault(o => o.Codigo == id) ?? new Produto();
+            isInativo = Produto.Inativo == 1;
         }
     }
 

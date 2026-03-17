@@ -204,7 +204,7 @@
     private void FiltrarClientes()
     {
         clientesFiltrados = todosClientes
-            .Where(c => c.Nome.Contains(termoBuscaCliente, StringComparison.OrdinalIgnoreCase)).ToList();
+            .Where(c => c.Nome.Contains(termoBuscaCliente, StringComparison.OrdinalIgnoreCase) && c.Inativo == 0).ToList();
     }
 
     private void BuscarClientePorCodigo()

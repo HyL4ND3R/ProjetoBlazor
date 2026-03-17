@@ -125,6 +125,7 @@
             cliente = DbFactory.CreateDbContext().Cliente.FirstOrDefault(o => o.Codigo == id) ?? new Cliente();
             _carregamentoInicial = true;
             TipoSelecionado = cliente.TipoDocumento;
+            isInativo = cliente.Inativo == 1;
             _carregamentoInicial = false;
         }
     }
