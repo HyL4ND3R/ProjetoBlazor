@@ -1,4 +1,6 @@
 ﻿@page "/RelatorioPedidos"
+@rendermode InteractiveServer
+@inject Utils.Relatorios RelatoriosUtil
 
 <PageTitle>Relatório Pedidos</PageTitle>
 
@@ -115,10 +117,24 @@
     </div>
 }
 
+@if (carregando)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1" style="display: flex; align-items: center; justify-content: center;">
+        <div class="text-center text-white">
+            <div class="spinner-border" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <h5 class="mt-3">Gerando relatório, por favor aguarde...</h5>
+        </div>
+    </div>
+}
+
 @code {
     private RelatorioPedidos relatorioPedidos = new();
     private bool exibindoBuscaProduto = false;
     private bool exibindoBuscaCliente = false;
+    private bool carregando = false;
     private string nomeCliente = "";
     private string nomeProduto = "";
     private string termoBuscaCliente = "";
@@ -183,40 +199,79 @@
         exibindoBuscaProduto = false;
     }
 
-    private async void Visualizar()
+    private async Task Visualizar()
     {
         try
         {
+            carregando = true; // Ativa a rodinha
+            StateHasChanged(); // Força o Blazor a renderizar o loading
 
-            using var context = DbFactory.CreateDbContext();
+            // Importante: Damos um pequeno delay para garantir que o navegador
+            // renderize o spinner antes de começar o processamento pesado
+            await Task.Delay(100);
 
-            var query = from p in context.Pedido
-                        join i in context.PedidoItem on p.Controle equals i.ControlePedido
-                        join c in context.Cliente on p.ClienteCodigo equals c.Codigo
-                        where p.Data >= relatorioPedidos.DataInicial && p.Data <= relatorioPedidos.DataFinal
-                            && (relatorioPedidos.CodCliente == null || p.ClienteCodigo == relatorioPedidos.CodCliente)
-                            && (relatorioPedidos.CodProduto == null || i.ProdutoCodigo == relatorioPedidos.CodProduto)
-                        select new PedidoRelatorioDTO
-                        {
-                            PedidoCodigo = p.Codigo,
-                            ClienteCodigo = p.ClienteCodigo,
-                            ClienteNome = c.Nome,
-                            DataPedido = p.Data,
-                            // Usando ?? 0 pois QtdeTotal e ValorTotal podem ser nulos no banco
-                            QuantidadeTotalPedido = (decimal)(p.QtdeTotal ?? 0),
-                            ValorTotalPedido = (decimal)(p.ValorTotal ?? 0),
-                    
-                            ProdutoCodigo = i.ProdutoCodigo,
-                            ProdutoDescricao = i.Descricao,
-                            ProdutoQuantidade = i.Quantidade,
-                            ProdutoValorUn = i.ValorUn,
-                            ProdutoValorTotal = i.ValorTotal
-                        };
+            var listPedidoRelatorioDTO = await ObterDadosRelatorio(relatorioPedidos);
+
+            if (listPedidoRelatorioDTO == null || !listPedidoRelatorioDTO.Any())
+            {
+                await JS.InvokeVoidAsync("alert", "Nenhum pedido encontrado.");
+                return;
+            }
+
+            var pdfBytes = RelatoriosUtil.GerarRelatorioPedidos(listPedidoRelatorioDTO);
+
+            var base64 = Convert.ToBase64String(pdfBytes);
+            await JS.InvokeVoidAsync("downloadFile",
+                $"RelatorioPedidos-{relatorioPedidos.DataInicial.ToString("dd/MM/yyyy")}-{relatorioPedidos.DataFinal.ToString("dd/MM/yyyy")}.pdf",
+                base64);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Erro ao gerar relatório: {ex.Message}");
             await JS.InvokeVoidAsync("alert", "Ocorreu um erro ao gerar o relatório. Verifique os dados e tente novamente.");
         }
+        finally
+        {
+            carregando = false; // Desativa a rodinha
+            StateHasChanged(); // Atualiza a tela para remover o loading
+        }
+    }
+
+    private async Task<List<PedidoRelatorioDTO>> ObterDadosRelatorio(RelatorioPedidos relatorioPedidos)
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        var query = from p in context.Pedido
+                    join i in context.PedidoItem on p.Controle equals i.ControlePedido
+                    join c in context.Cliente on p.ClienteCodigo equals c.Codigo
+                    where p.Data >= relatorioPedidos.DataInicial && p.Data <= relatorioPedidos.DataFinal
+                    select new PedidoRelatorioDTO
+                    {
+                        PedidoCodigo = p.Codigo,
+                        ClienteCodigo = p.ClienteCodigo,
+                        ClienteNome = c.Nome,
+                        DataPedido = p.Data,
+                        // Usando ?? 0 pois QtdeTotal e ValorTotal podem ser nulos no banco
+                        QuantidadeTotalPedido = (decimal)(p.QtdeTotal ?? 0),
+                        ValorTotalPedido = (decimal)(p.ValorTotal ?? 0),
+
+                        ProdutoCodigo = i.ProdutoCodigo,
+                        ProdutoDescricao = i.Descricao,
+                        ProdutoQuantidade = i.Quantidade,
+                        ProdutoValorUn = i.ValorUn,
+                        ProdutoValorTotal = i.ValorTotal
+                    };
+
+        if (relatorioPedidos.CodCliente.HasValue && relatorioPedidos.CodCliente > 0)
+        {
+            query = query.Where(x => x.ClienteCodigo == relatorioPedidos.CodCliente);
+        }
+
+        if (relatorioPedidos.CodProduto.HasValue && relatorioPedidos.CodProduto > 0)
+        {
+            query = query.Where(x => x.ProdutoCodigo == relatorioPedidos.CodProduto);
+        }
+
+        return await query.OrderBy(x => x.PedidoCodigo).ToListAsync();
     }
 }

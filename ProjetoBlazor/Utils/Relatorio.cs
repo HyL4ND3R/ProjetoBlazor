@@ -41,11 +41,11 @@ namespace ProjetoBlazor.Utils
                         iText.Layout.Element.Table headerTable = new iText.Layout.Element.Table(UnitValue.CreatePercentArray(new float[] { 50, 50 })).UseAllAvailableWidth();
                         headerTable.SetMarginBottom(20);
 
-                        headerTable.AddCell(new Cell().Add(new Paragraph($"Código: {pedido.Codigo}")).SetBorder(iText.Layout.Borders.Border.NO_BORDER));
+                        headerTable.AddCell(new Cell().Add(new Paragraph($"Pedido: {pedido.Codigo}")).SetBorder(iText.Layout.Borders.Border.NO_BORDER));
                         headerTable.AddCell(new Cell().Add(new Paragraph($"Data: {pedido.Data:dd/MM/yyyy}")).SetTextAlignment(TextAlignment.RIGHT).SetBorder(iText.Layout.Borders.Border.NO_BORDER));
 
                         // Nota: Verifique se sua classe Pedido tem a propriedade ClienteNome ou use o código
-                        headerTable.AddCell(new Cell().Add(new Paragraph($"Cliente: {pedido.ClienteCodigo}")).SetBorder(iText.Layout.Borders.Border.NO_BORDER));
+                        headerTable.AddCell(new Cell().Add(new Paragraph($"Cliente: {pedido.ClienteCodigo} - {pedido.ClienteNome}")).SetBorder(iText.Layout.Borders.Border.NO_BORDER));
                         headerTable.AddCell(new Cell().Add(new Paragraph($"Valor Total: {pedido.ValorTotal:C2}")).SetTextAlignment(TextAlignment.RIGHT).SetFont(boldFont).SetBorder(iText.Layout.Borders.Border.NO_BORDER));
 
                         document.Add(headerTable);
@@ -78,7 +78,7 @@ namespace ProjetoBlazor.Utils
             }
         }
 
-        public byte[] GerarRelatorioPedido(List<PedidoRelatorioDTO> dados)
+        public byte[] GerarRelatorioPedidos(List<PedidoRelatorioDTO> dados)
         {
             using (MemoryStream ms = new MemoryStream())
             {
