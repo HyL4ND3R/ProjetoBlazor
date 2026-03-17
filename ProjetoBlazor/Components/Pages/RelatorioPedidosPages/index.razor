@@ -235,7 +235,7 @@
 
             var base64 = Convert.ToBase64String(pdfBytes);
             await JS.InvokeVoidAsync("downloadFile",
-                $"RelatorioPedidos-{relatorioPedidos.DataInicial.ToString("dd/MM/yyyy")}-{relatorioPedidos.DataFinal.ToString("dd/MM/yyyy")}.pdf",
+                $"RelatorioPedidos_{relatorioPedidos.DataInicial.ToString("dd-MM-yyyy")}_{relatorioPedidos.DataFinal.ToString("dd-MM-yyyy")}.pdf",
                 base64);
         }
         catch (Exception ex)
