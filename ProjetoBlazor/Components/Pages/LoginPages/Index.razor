@@ -128,6 +128,7 @@ else
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Erro no login: {ex.Message}");
+            await LogService.GravarLog(ex.Message, ex.StackTrace);
             await JS.InvokeVoidAsync("alert", "Ocorreu um erro ao tentar fazer login. Tente novamente mais tarde.");
         }
         finally

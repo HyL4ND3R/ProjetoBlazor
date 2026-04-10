@@ -9,7 +9,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContextFactory<DataBaseContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.")));
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found."),
+    sqlOptions =>
+    {
+        // Habilita a estratégia de repetição automática para falhas transitórias
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,           // Máximo de tentativas
+            maxRetryDelay: TimeSpan.FromSeconds(10), // Intervalo entre elas
+            errorNumbersToAdd: null);   // Códigos de erro extras (opcional)
+    }));
+
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();
 
