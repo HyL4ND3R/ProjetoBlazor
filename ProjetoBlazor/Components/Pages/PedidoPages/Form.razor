@@ -52,57 +52,60 @@
             </div>
         </div>
     </div>
-    <div class="card shadow-sm">
-        <div class="card-header d-flex align-items-center">
-            @* Grupo de botões à esquerda *@
-            <div class="btn-group me-3">
-                <button class="btn btn-sm btn-success" @onclick="() => AbrirModalItem(new PedidoItem { ControlePedido = pedido.Controle })">
-                    <i class="bi bi-plus-circle"></i> Inserir
-                </button>
+    @if (pedido.Codigo > 0)
+    {
+        <div class="card shadow-sm">
+            <div class="card-header d-flex align-items-center">
+                @* Grupo de botões à esquerda *@
+                <div class="btn-group me-3">
+                    <button class="btn btn-sm btn-success" @onclick="() => AbrirModalItem(new PedidoItem { ControlePedido = pedido.Controle })">
+                        <i class="bi bi-plus-circle"></i> Inserir
+                    </button>
 
-                <button class="btn btn-sm btn-primary" @onclick="() => AbrirModalItem(itemSelecionado!)" disabled="@(itemSelecionado == null)">
-                    <i class="bi bi-pencil"></i> Alterar
-                </button>
+                    <button class="btn btn-sm btn-primary" @onclick="() => AbrirModalItem(itemSelecionado!)" disabled="@(itemSelecionado == null)">
+                        <i class="bi bi-pencil"></i> Alterar
+                    </button>
 
-                <button class="btn btn-sm btn-danger" @onclick="() => ExcluirItem(itemSelecionado!)" disabled="@(itemSelecionado == null)">
-                    <i class="bi bi-trash"></i> Excluir
-                </button>
+                    <button class="btn btn-sm btn-danger" @onclick="() => ExcluirItem(itemSelecionado!)" disabled="@(itemSelecionado == null)">
+                        <i class="bi bi-trash"></i> Excluir
+                    </button>
+                </div>
+
+                @* Título empurrado para o restante do espaço *@
+                <h6 class="mb-0 text-uppercase fw-bold text-muted">Itens do Pedido</h6>
             </div>
-
-            @* Título empurrado para o restante do espaço *@
-            <h6 class="mb-0 text-uppercase fw-bold text-muted">Itens do Pedido</h6>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Item</th>
-                            <th>Descrição</th>
-                            <th>Qtd</th>
-                            <th>Vl. Unit</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in itensPedido)
-                        {
-                            @* O segredo está no @onclick e na classe CSS condicional *@
-                            <tr @onclick="() => SelecionarLinha(item)"
-                                style="cursor: pointer;"
-                                class="@(itemSelecionado == item ? "table-primary" : "")">
-                                <td>@item.Item</td>
-                                <td>@item.Descricao</td>
-                                <td>@item.Quantidade.ToString("N2")</td>
-                                <td>@item.ValorUn.ToString("C2")</td>
-                                <td>@item.ValorTotal.ToString("C2")</td>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th>Descrição</th>
+                                <th>Qtd</th>
+                                <th>Vl. Unit</th>
+                                <th>Total</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in itensPedido)
+                            {
+                                @* O segredo está no @onclick e na classe CSS condicional *@
+                                <tr @onclick="() => SelecionarLinha(item)"
+                                    style="cursor: pointer;"
+                                    class="@(itemSelecionado == item ? "table-primary" : "")">
+                                    <td>@item.Item</td>
+                                    <td>@item.Descricao</td>
+                                    <td>@item.Quantidade.ToString("N2")</td>
+                                    <td>@item.ValorUn.ToString("C2")</td>
+                                    <td>@item.ValorTotal.ToString("C2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
+    }
     @* Barra de Ações do Pedido *@
     <div class="mt-4 mb-5 d-flex justify-content-end gap-2">
         <button class="btn btn-outline-secondary" @onclick="Cancelar">
